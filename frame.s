@@ -1,5 +1,5 @@
 ;
-; vasm -Faout -no-opt -o slice.o slice.s
+; vasm -Fhunkexe -no-opt -o frame.o frame.s
 
 OpenLibrary	= -552
 CloseLibrary	= -414
@@ -54,10 +54,10 @@ MODE_NEWFILE	= 1006
 		MOVE.L	#10240,d3
 		JSR	Write(a6)
 		MOVE.L	a2,d1
-		JSR	Close(a6)		
+		JSR	Close(a6)
 NoFile:		MOVEA.L	a6,a1
 		MOVEA.L	a3,a6
-		JSR	CloseLibrary(a6)		
+		JSR	CloseLibrary(a6)
 NoDos:		MOVEM.L	(sp)+,d2-d3/a2-a3/a6
 		RTS
 
@@ -87,8 +87,8 @@ monoframe:	MOVEM.L	d2-d7/a2-a6,-(sp)
 		MOVEA.W	(a0)+,a5
 		MOVE.L	(a0)+,d2               ; loading LMS weights
 		MOVE.L	(a0)+,d3
-		LEA	dequant(pc),a6         ; pointer to lookup table
-nextslice:	MOVE.L	(a0)+,d0               ; the first half of slice
+nextslice: 	LEA	dequant(pc),a6         ; pointer to lookup table
+		MOVE.L	(a0)+,d0               ; the first half of slice
 		MOVE.L	(a0)+,d1               ; the second half of slice
 		MOVE.L	d7,-(sp)               ; lame, but I'm out of registers
 		BSR.S	monoslice              ; decode slice
@@ -111,10 +111,10 @@ nextslice:	MOVE.L	(a0)+,d0               ; the first half of slice
 ;   a6 - pointer to 'dequant' lookup table (in/out)
 ;==============================================================================
 
-monoslice:	MOVEQ	#0,d4
-		ROL.L	#8,d0
-		MOVE.B	d0,d6
-		ANDI.B	#$F0,d6                ; scale factor in bits 7:4 of d6
+monoslice:	ROL.L	#8,d0
+		MOVE.B	d0,d4
+		ANDI.W	#$00F0,d4              ; scale factor in bits 7:4 of d4
+		ADDA.W	d4,a6                  ; select lookup table row
 
 		;extract 8 residuals from d0
 		
@@ -195,26 +195,25 @@ monoslice:	MOVEQ	#0,d4
 
 		; decode residual sample using lookup table, store in d4
 
-DecSamp:	ANDI.W	#$0E,d4                ; extract encoded sample in d4 
-		OR.B	d6,d4                  ; merge with encoded scale factor
+DecSamp:	ANDI.W	#$0E,d4                ; extract encoded sample in d4
 		MOVE.W	(a6,d4.w),d4           ; decode with lookup table
 
 		; calculate predicted sample, store in d5
 
-		MOVE.W	a5,d7                  ; history[-1]
-		MULS.W	d3,d7                  ; *= weights[-1]
-		MOVE.L	d7,d5
+		MOVE.W	a5,d6                  ; history[-1]
+		MULS.W	d3,d6                  ; *= weights[-1]
+		MOVE.L	d6,d5
 		SWAP	d3
-		MOVE.W	a4,d7                  ; history[-2]
-		MULS.W	d3,d7                  ; *= weights[-2]
-		ADD.L	d7,d5
-		MOVE.W	a3,d7                  ; history[-3]
-		MULS.W	d2,d7                  ; *= weights[-3]
-		ADD.L	d7,d5
+		MOVE.W	a4,d6                  ; history[-2]
+		MULS.W	d3,d6                  ; *= weights[-2]
+		ADD.L	d6,d5
+		MOVE.W	a3,d6                  ; history[-3]
+		MULS.W	d2,d6                  ; *= weights[-3]
+		ADD.L	d6,d5
 		SWAP	d2
-		MOVE.W	a2,d7                  ; history[-4]
-		MULS.W	d2,d7                  ; *= weights[-4]
-		ADD.L	d7,d5
+		MOVE.W	a2,d6                  ; history[-4]
+		MULS.W	d2,d6                  ; *= weights[-4]
+		ADD.L	d6,d5
 		ASR.L	#6,d5
 		ASR.L	#7,d5                  ; predicted sample in d5
 
@@ -232,24 +231,24 @@ DecSamp:	ANDI.W	#$0E,d4                ; extract encoded sample in d4
 
 clamped:	ASR.W	#4,d4                  ; scale residual signal down
 
-		MOVE.W	a2,d7
+		MOVE.W	a2,d6
 		BMI.S	h4neg
 		ADD.W	d4,d2
 		BRA.S	h3
 h4neg:  	SUB.W	d4,d2
 h3:		SWAP	d2
-		MOVE.W	a3,d7
+		MOVE.W	a3,d6
 		BMI.S	h3neg
 		ADD.W	d4,d2
 		BRA.S	h2
 h3neg:		SUB.W	d4,d2
-h2:		MOVE.W	a4,d7
+h2:		MOVE.W	a4,d6
 		BMI.S	h2neg
 		ADD.W	d4,d3
 		BRA.S	h1
 h2neg:		SUB.W	d4,d3
 h1:		SWAP	d3
-		MOVE.W	a5,d7
+		MOVE.W	a5,d6
 		BMI.S	h1neg
 		ADD.W	d4,d3
 		BRA.S	update
