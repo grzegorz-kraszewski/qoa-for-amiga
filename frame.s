@@ -115,75 +115,75 @@ monoslice:	ROL.L	#8,d0
 		ANDI.W	#$00F0,d4              ; scale factor in bits 7:4 of d4
 		ADDA.W	d4,a6                  ; select lookup table row
 
-		;extract 8 residuals from d0
+		;extract 9 residuals from d0, r[0] is in position already
 		
 		MOVE.B	d0,d4
 		BSR.S	DecSamp
-		ROL.L	#3,d0                  ; r1 in bits 3:1 of d0
+		ROL.L	#3,d0                  ; r[1] in bits 3:1 of d0
 		MOVE.B	d0,d4
 		BSR.S	DecSamp
-		ROL.L	#3,d0                  ; r2 in bits 3:1 of d0
+		ROL.L	#3,d0                  ; r[2] in bits 3:1 of d0
 		MOVE.B	d0,d4
 		BSR.S	DecSamp
-		ROL.L	#3,d0                  ; r3 in bits 3:1 of d0
+		ROL.L	#3,d0                  ; r[3] in bits 3:1 of d0
 		MOVE.B	d0,d4
 		BSR.S	DecSamp
-		ROL.L	#3,d0                  ; r4 in bits 3:1 of d0
+		ROL.L	#3,d0                  ; r[4] in bits 3:1 of d0
 		MOVE.B	d0,d4
 		BSR.S	DecSamp
-		ROL.L	#3,d0                  ; r5 in bits 3:1 of d0
+		ROL.L	#3,d0                  ; r[5] in bits 3:1 of d0
 		MOVE.B	d0,d4
 		BSR.S	DecSamp
-		ROL.L	#3,d0                  ; r6 in bits 3:1 of d0
+		ROL.L	#3,d0                  ; r[6] in bits 3:1 of d0
 		MOVE.B	d0,d4
 		BSR.S	DecSamp
-		ROL.L	#3,d0                  ; r7 in bits 3:1 of d0
+		ROL.L	#3,d0                  ; r[7] in bits 3:1 of d0
 		MOVE.B	d0,d4
 		BSR.S	DecSamp
-		ROL.L	#3,d0                  ; r8 in bits 3:1 of d0
+		ROL.L	#3,d0                  ; r[8] in bits 3:1 of d0
 		MOVE.B	d0,d4
 		BSR.S	DecSamp
 		
-		; now the first bit of r9 is in d0:0, pull two bits from d1
+		; now the first bit of r[9] is in d0:0, pull two bits from d1
 		
 		LSL.L	#1,d1
 		ROXL.L	#1,d0
 		LSL.L	#1,d1
 		ROXL.L	#1,d0
-		LSL.B   #1,d0                  ; r9 in bits 3:1 of d0
+		LSL.B   #1,d0                  ; r[9] in bits 3:1 of d0
 		MOVE.B	d0,d4
 		BSR.S	DecSamp
 		
 		; extract 10 residuals from d1
 		
-		ROL.L	#4,d1                  ; rA in bits 3:1 of d1
+		ROL.L	#4,d1                  ; r[10] in bits 3:1 of d1
 		MOVE.B	d1,d4
 		BSR.S   DecSamp
-		ROL.L	#3,d1                  ; rB in bits 3:1 of d1
+		ROL.L	#3,d1                  ; r[11] in bits 3:1 of d1
 		MOVE.B	d1,d4
 		BSR.S   DecSamp
-		ROL.L	#3,d1                  ; rC in bits 3:1 of d1
+		ROL.L	#3,d1                  ; r[12] in bits 3:1 of d1
 		MOVE.B	d1,d4
 		BSR.S   DecSamp
-		ROL.L	#3,d1                  ; rD in bits 3:1 of d1
+		ROL.L	#3,d1                  ; r[13] in bits 3:1 of d1
 		MOVE.B	d1,d4
 		BSR.S   DecSamp
-		ROL.L	#3,d1                  ; rE in bits 3:1 of d1
+		ROL.L	#3,d1                  ; r[14] in bits 3:1 of d1
 		MOVE.B	d1,d4
 		BSR.S   DecSamp
-		ROL.L	#3,d1                  ; rF in bits 3:1 of d1
+		ROL.L	#3,d1                  ; r[15] in bits 3:1 of d1
 		MOVE.B	d1,d4
 		BSR.S   DecSamp
-		ROL.L	#3,d1                  ; rG in bits 3:1 of d1
+		ROL.L	#3,d1                  ; r[16] in bits 3:1 of d1
 		MOVE.B	d1,d4
 		BSR.S   DecSamp
-		ROL.L	#3,d1                  ; rH in bits 3:1 of d1
+		ROL.L	#3,d1                  ; r[17] in bits 3:1 of d1
 		MOVE.B	d1,d4
 		BSR.S   DecSamp
-		ROL.L	#3,d1                  ; rI in bits 3:1 of d1
+		ROL.L	#3,d1                  ; r[18] in bits 3:1 of d1
 		MOVE.B	d1,d4
 		BSR.S   DecSamp
-		ROL.L	#3,d1                  ; rJ in bits 3:1 of d1
+		ROL.L	#3,d1                  ; r[19] in bits 3:1 of d1
 		MOVE.B	d1,d4
 		BSR.S   DecSamp
 		RTS
