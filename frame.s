@@ -90,9 +90,7 @@ monoframe:	MOVEM.L	d2-d7/a2-a6,-(sp)
 nextslice: 	LEA	dequant(pc),a6         ; pointer to lookup table
 		MOVE.L	(a0)+,d0               ; the first half of slice
 		MOVE.L	(a0)+,d1               ; the second half of slice
-		MOVE.L	d7,-(sp)               ; lame, but I'm out of registers
 		BSR.S	monoslice              ; decode slice
-		MOVE.L	(sp)+,d7
 		DBF	d7,nextslice
 		MOVEM.L	(sp)+,d2-d7/a2-a6
 		RTS
@@ -100,15 +98,16 @@ nextslice: 	LEA	dequant(pc),a6         ; pointer to lookup table
 ;==============================================================================
 ; Decodes QOA slice of mono/stereo stream.
 ; Registers usage:
-;   d0,d1 - slice (in)
-;   d2,d3 - LMS weights (in/out)
-;   d4 - residual sample, quantized, dequantized, scaled (internal)
-;   d5 - predicted sample (internal)
-;   d6 - keeps extracted and shifted scalefactor(internal)
-;   d7 - scratch register (internal)
-;   a2,a3,a4,a5 - LMS history (in/out)
-;   a1 - output buffer (in/out)
-;   a6 - pointer to 'dequant' lookup table (in/out)
+;   d0,d1 - slice (input, modified)
+;   d2,d3 - LMS weights (input, updated)
+;   d4 - residual sample, quantized, dequantized, scaled (modified)
+;   d5 - predicted sample (modified)
+;   d6 - scratch register (modified)
+;   d7 - unused
+;   a0 - unused
+;   a1 - output buffer (input, updated)
+;   a2,a3,a4,a5 - LMS history (input, updated)
+;   a6 - pointer to 'dequant' lookup table (input, modified)
 ;==============================================================================
 
 monoslice:	ROL.L	#8,d0
