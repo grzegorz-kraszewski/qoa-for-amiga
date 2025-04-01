@@ -14,12 +14,24 @@ Catalog *Cat;
 #define D(args...) Printf(args)
 #else
 #define D(args...)
-
 #endif
+
+#define divu16(a,b) ({ \
+UWORD _r, _b = (b); \
+ULONG _a = (a); \
+asm("DIVU.W %2,%0": "=d" (_r): "0" (_a), "dmi" (_b): "cc"); \
+_r;})
 
 #define LS()
 #define MAKE_ID(a, b, c, d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
 char FaultBuffer[128];
+
+/* maximum sizes of QOA frames in bytes WITHOUT 8-byte frame header */
+
+#define QOA_FRAME_MONO      2064   /* 16 (LMS) + 256 * 8 (slices)     */
+#define QOA_FRAME_STEREO    4128   /* 32 (LMS) + 256 * 2 * 8 (slices) */
+
+ULONG QoaFrameSizes[2] = { QOA_FRAME_MONO, QOA_FRAME_STEREO };
 
 struct AiffHeader
 {
@@ -200,6 +212,17 @@ AiffOutput::AiffOutput(STRPTR filename, ULONG frames, UWORD channels, ULONG samp
 
 void AiffOutput::sampleRateConvert(ULONG rate)
 {
+	UWORD mant = 16414;
+
+	while ((rate & 0x80000000) == 0)
+	{
+		mant--;
+		rate <<= 1;
+	}
+
+	header.commRateExp = mant;
+	header.commRateMant0 = rate;
+	header.commRateMant1 = 0;
 }
 
 /*-------------------------------------------------------------------------------------------*/
