@@ -1,9 +1,9 @@
 CC = g++
 LD = g++
-CFLAGS = -fbaserel -O2 -fomit-frame-pointer -mregparm -fno-exceptions -fno-rtti -D__NOLIBBASE__
+CFLAGS = -fbaserel -O2 -fomit-frame-pointer -mregparm -fno-exceptions -fno-rtti -D__NOLIBBASE__ -DDEBUG
 LDFLAGS = -nostdlib -fbaserel -nostartfiles -fno-exceptions -fno-rtti
 LIBS = 
-OBJS = start.o main.o
+OBJS = start.o main.o frame.o
 EXE = QoaToAiff
 
 all: $(OBJS)
@@ -20,6 +20,10 @@ start.o: start.cpp
 	@echo "Compiling $@..."
 	@$(CC) $(CFLAGS) -fwritable-strings -c -o $@ $<
 
+frame.o: frame.s
+	@echo "Assembling $@..."
+	@Vasm -Faout -no-opt -o $@ $<
+
 %.o: %.cpp
 	@echo "Compiling $@..."
 	@$(CC) $(CFLAGS) -c -o $@ $<
@@ -28,3 +32,4 @@ start.o: start.cpp
 
 main.o: main.cpp
 start.o: start.cpp
+frame.o: frame.s
