@@ -63,14 +63,6 @@ void IoErrProblem(STRPTR text)
 	Printf("%s: %s.\n", text, &FaultBuffer[2]);
 }
 
-BOOL FileProblem(STRPTR filename)
-{
-	Fault(IoErr(), "", FaultBuffer, 128);
-	PutStr("Plik");
-	Printf(" \"%s\": %s.\n", filename, &FaultBuffer[2]);
-	return FALSE;
-}
-
 /*-------------------------------------------------------------------------------------------*/
 
 class CallArgs
@@ -103,6 +95,8 @@ class CallArgs
 
 class SysFile
 {
+	BOOL fileProblem();
+
 	protected:
 
 	BPTR handle;
@@ -119,6 +113,13 @@ class SysFile
 	BOOL seek(LONG offset, LONG mode);
 };
 
+BOOL SysFile::fileProblem()
+{
+	Fault(IoErr(), "", FaultBuffer, 128);
+	PutStr("Plik");
+	Printf(" \"%s\": %s.\n", filename, &FaultBuffer[2]);
+	return FALSE;
+}
 
 SysFile::SysFile(STRPTR path, LONG mode)
 {
@@ -126,36 +127,35 @@ SysFile::SysFile(STRPTR path, LONG mode)
 	ready = FALSE;
 
 	if (handle = Open(filename, mode)) ready = TRUE;
-	else FileProblem(filename);
+	else fileProblem();
 }
-
 
 SysFile::~SysFile()
 {
 	if (handle)
 	{
-		if (!(Close(handle))) FileProblem(filename);
+		if (!(Close(handle))) fileProblem();
 	}
 }
 
 BOOL SysFile::read(APTR buffer, LONG bytes)
 {
 	if (FRead(handle, buffer, bytes, 1) == 1) return TRUE;
-	else return FileProblem(filename);
+	else return fileProblem();
 }
 
 
 BOOL SysFile::write(APTR buffer, LONG bytes)
 {
 	if (FWrite(handle, buffer, bytes, 1) == 1) return TRUE;
-	else return FileProblem(filename);
+	else return fileProblem();
 }
 
 
 BOOL SysFile::seek(LONG offset, LONG mode)
 {
 	if (Seek(handle, offset, mode) >= 0) return TRUE;
-	else return FileProblem(filename);
+	else return fileProblem();
 }
 
 /*-------------------------------------------------------------------------------------------*/
@@ -239,7 +239,7 @@ QoaInput::QoaInput(STRPTR filename) : SysFile(filename, MODE_OLDFILE)
 
 	ready = FALSE;
 	if (!SysFile::ready) return;
-	if (!read(header, 8)) { FileProblem(filename); return; }
+	if (!read(header, 8)) return;
 	if (header[0] != MAKE_ID('q','o','a','f')) { Problem("Not a QOA file"); return; }
 	samples = header[1];
 	if (samples == 0) { Problem("Zero samples in QOA file."); return; }
@@ -256,10 +256,10 @@ BOOL QoaInput::probeFirstFrame()
 {
 	ULONG probe;
 
-	if (!read(&probe, 4)) return FileProblem(filename);
+	if (!read(&probe, 4)) return FALSE;
 	channels = probe >> 24;
 	sampleRate = probe & 0x00FFFFFF;
-	if (!seek(-4, OFFSET_CURRENT)) return FileProblem(filename);
+	if (!seek(-4, OFFSET_CURRENT)) return FALSE;
 	return TRUE;
 }
 
