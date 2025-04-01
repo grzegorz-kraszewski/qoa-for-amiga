@@ -52,6 +52,12 @@ struct AiffHeader
 	ULONG ssndPad1;            // 0
 };
 
+extern "C"
+{
+	void DecodeMonoFrame(ULONG *in, WORD *out, WORD slices);
+	void DecodeStereoFrame(ULONG *in, WORD *out, WORD slices);
+}
+
 void Problem(STRPTR text)
 {
 	Printf("%s.\n", text);
@@ -269,30 +275,93 @@ class App
 {
 	QoaInput *inFile;
 	AiffOutput *outFile;
+	ULONG *inBuf;
+	WORD *outBuf;
+
+	ULONG convertFrame();
 
 	public:
 
 	BOOL ready;
 
-	App(CallArgs &args)
-	{
-		ready = FALSE;
-		inFile = new QoaInput(args.getString(0));
-
-		if (inFile->ready)
-		{
-			outFile = new AiffOutput(args.getString(1), inFile->samples, inFile->channels,
-				inFile->sampleRate);
-			if (outFile->ready) ready = TRUE;
-		}
-	}
-	
-	~App()
-	{
-		if (inFile) delete inFile;
-		if (outFile) delete outFile;
-	}
+	App(CallArgs &args);
+	~App();
+	BOOL convertAudio();
 };
+
+App::App(CallArgs &args)
+{
+	ready = FALSE;
+	inFile = new QoaInput(args.getString(0));
+	if (!inFile->ready) return;
+	outFile = new AiffOutput(args.getString(1), inFile->samples, inFile->channels,
+		inFile->sampleRate);
+	if (outFile->ready) ready = TRUE;
+}
+
+App::~App()
+{
+	if (inFile) delete inFile;
+	if (outFile) delete outFile;
+}
+
+
+ULONG App::convertFrame()
+{
+	ULONG header[2];
+	UWORD channels;
+	ULONG samprate;
+	UWORD fsamples;
+	UWORD fbytes;
+	UWORD slicesPerChannel;
+	ULONG expectedFrameSize;
+	void (*decoder)(ULONG*, WORD*, WORD);
+
+	if (inFile->channels == 1) decoder = DecodeMonoFrame;
+	else decoder = DecodeStereoFrame;
+
+	if (!inFile->read(header, 8)) return 0;
+	channels = header[0] >> 24;
+	samprate = header[0] & 0x00FFFFFF;
+	fsamples = header[1] >> 16;
+	fbytes = header[1] & 0x0000FFFF;
+	D("QOA frame, %lu channels @ %lu Hz, %lu samples, %lu bytes to read.\n", channels, samprate,
+		fsamples, fbytes);
+	if (channels != inFile->channels) { Problem("Variable number of channels detected."); return 0; }
+	if (samprate != inFile->sampleRate) { Problem("Variable sampling rate detected."); return 0; }
+	if (fsamples == 0) { Problem("Zero samples specified in frame."); return 0; }
+	if (fsamples > 5120) { Problem("More than 5120 samples in frame specified."); return 0; }
+	slicesPerChannel = divu16(fsamples + 19, 20);
+	expectedFrameSize = 8 + (8 << channels) + (slicesPerChannel << (channels + 2));
+	if (expectedFrameSize != fbytes) { Problem("Expected and specified frame size differs."); return 0; }
+	D("expected frame size %ld bytes.\n", expectedFrameSize);
+	if (!inFile->read(inBuf, fbytes - 8)) return 0;
+	decoder(inBuf, outBuf, slicesPerChannel);
+	if (!outFile->write(outBuf, fsamples << (channels - 1))) return 0;
+	return fsamples;
+}
+
+BOOL App::convertAudio()
+{
+	ULONG decoded = 0;
+
+	if (outBuf = (WORD*) new UBYTE[5120 << inFile->channels])
+	{
+		if (inBuf = (ULONG*) new UBYTE[QoaFrameSizes[inFile->channels - 1]])
+		{
+			ULONG fsamples = 0;
+
+			while ((decoded < inFile->samples) && (fsamples = convertFrame()))
+			{
+				decoded += fsamples;
+			}
+
+			delete inBuf;
+		}
+
+		delete outBuf;
+	}
+}
 
 /*-------------------------------------------------------------------------------------------*/
 
@@ -300,6 +369,7 @@ LONG Main(WBStartup *wbmsg)
 {
 	App *app;
 	CallArgs args;
+	LONG result = RETURN_ERROR;
 
 	/* Locale are optional. */
 
@@ -314,7 +384,7 @@ LONG Main(WBStartup *wbmsg)
 
 		if (app.ready)
 		{
-			Printf("");
+			if (app.convertAudio()) result = RETURN_OK;
 		}
 	}
 
@@ -324,5 +394,5 @@ LONG Main(WBStartup *wbmsg)
 		CloseLibrary(LocaleBase);
 	}
 
-	return 0;
+	return result;
 }
