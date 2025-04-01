@@ -87,27 +87,14 @@ class CallArgs
 		vals[0] = 0;
 		vals[1] = 0;
 		ready = FALSE;
-
-		if (args = ReadArgs("FROM/A,TO/A", vals, NULL))
-		{
-			D("CallArgs: RDArgs allocated [$%08lx].\n", args);
-			ready = TRUE;
-		}
+		if (args = ReadArgs("FROM/A,TO/A", vals, NULL)) ready = TRUE;
 		else IoErrProblem("Program arguments");
-
-		D("CallArgs: created at $%08lx.\n", this);  
-	} 
+	}
 
 	~CallArgs()
 	{
-		if (args)
-		{
-			FreeArgs(args);
-			D("CallArgs: RDArgs [$%08lx] freed.\n", args);
-		}
-
-		D("CallArgs: object $%08lx disposed.\n", this);
-	}	
+		if (args) FreeArgs(args);
+	}
 
 	STRPTR getString(LONG index) { return (STRPTR)vals[index]; }
 };
@@ -116,6 +103,8 @@ class CallArgs
 
 class SysFile
 {
+	protected:
+
 	BPTR handle;
 	STRPTR filename;
 
@@ -125,9 +114,9 @@ class SysFile
 
 	SysFile(STRPTR path, LONG mode);
 	~SysFile();
+	BOOL read(APTR buffer, LONG bytes);
 	BOOL write(APTR buffer, LONG bytes);
-	BPTR getHandle() { return handle; }
-	STRPTR getName() { return filename; }
+	BOOL seek(LONG offset, LONG mode);
 };
 
 
@@ -136,14 +125,8 @@ SysFile::SysFile(STRPTR path, LONG mode)
 	filename = path;
 	ready = FALSE;
 
-	if (handle = Open(filename, mode))
-	{
-		D("SysFile: file '%s' opened [$%08lx].\n", filename, handle);
-		ready = TRUE;
-	}
+	if (handle = Open(filename, mode)) ready = TRUE;
 	else FileProblem(filename);
-
-	D("SysFile: created at $%08lx.\n", this);
 }
 
 
@@ -152,16 +135,26 @@ SysFile::~SysFile()
 	if (handle)
 	{
 		if (!(Close(handle))) FileProblem(filename);
-		D("SysFile: file '%s' [$%08lx] closed.\n", filename, handle);
 	}
+}
 
-	D("SysFile: object $%08lx disposed.\n", this);
+BOOL SysFile::read(APTR buffer, LONG bytes)
+{
+	if (FRead(handle, buffer, bytes, 1) == 1) return TRUE;
+	else return FileProblem(filename);
 }
 
 
 BOOL SysFile::write(APTR buffer, LONG bytes)
 {
 	if (FWrite(handle, buffer, bytes, 1) == 1) return TRUE;
+	else return FileProblem(filename);
+}
+
+
+BOOL SysFile::seek(LONG offset, LONG mode)
+{
+	if (Seek(handle, offset, mode) >= 0) return TRUE;
 	else return FileProblem(filename);
 }
 
@@ -227,9 +220,54 @@ void AiffOutput::sampleRateConvert(ULONG rate)
 
 /*-------------------------------------------------------------------------------------------*/
 
+class QoaInput : public SysFile
+{
+	BOOL probeFirstFrame();
+
+	public:
+
+	BOOL ready;
+	ULONG samples;
+	ULONG channels;
+	ULONG sampleRate;
+	QoaInput(STRPTR filename);
+};
+
+QoaInput::QoaInput(STRPTR filename) : SysFile(filename, MODE_OLDFILE)
+{
+	ULONG header[2];
+
+	ready = FALSE;
+	if (!SysFile::ready) return;
+	if (!read(header, 8)) { FileProblem(filename); return; }
+	if (header[0] != MAKE_ID('q','o','a','f')) { Problem("Not a QOA file"); return; }
+	samples = header[1];
+	if (samples == 0) { Problem("Zero samples in QOA file."); return; }
+	if (!probeFirstFrame()) return;
+	if (channels == 0) { Problem("Zero audio channels specified in QOA file."); return; }
+	if (channels > 2) { Problem("QoaToAiff does not handle more than 2 audio channels."); return; }
+	if (sampleRate == 0) { Problem("0 Hz sampling rate specified in QOA file."); return; }
+	Printf("QOA stream: %lu %s samples at %lu Hz.\n", samples, (channels == 1) ? "mono" : "stereo",
+		sampleRate);
+	ready = TRUE;
+}
+
+BOOL QoaInput::probeFirstFrame()
+{
+	ULONG probe;
+
+	if (!read(&probe, 4)) return FileProblem(filename);
+	channels = probe >> 24;
+	sampleRate = probe & 0x00FFFFFF;
+	if (!seek(-4, OFFSET_CURRENT)) return FileProblem(filename);
+	return TRUE;
+}
+
+/*-------------------------------------------------------------------------------------------*/
+
 class App
 {
-	SysFile *inFile;
+	QoaInput *inFile;
 	AiffOutput *outFile;
 
 	public:
@@ -239,22 +277,20 @@ class App
 	App(CallArgs &args)
 	{
 		ready = FALSE;
-		inFile = new SysFile(args.getString(0), MODE_OLDFILE);
+		inFile = new QoaInput(args.getString(0));
 
 		if (inFile->ready)
 		{
-			outFile = new AiffOutput(args.getString(1), 0x1000, 1, 44100);
+			outFile = new AiffOutput(args.getString(1), inFile->samples, inFile->channels,
+				inFile->sampleRate);
 			if (outFile->ready) ready = TRUE;
 		}
-
-		D("App: created at $%08lx.\n", this);
 	}
 	
 	~App()
 	{
 		if (inFile) delete inFile;
 		if (outFile) delete outFile;
-		D("App: deleted object $%08lx.\n", this);
 	}
 };
 
