@@ -16,16 +16,18 @@
 ;==============================================================================
 ; Decodes QOA mono frame to a buffer.
 ; INPUTS:
-;   d0.w - number of slices available in the frame buffer, minus 1
-;          (0 to 255 including)
-;   a0.l - frame buffer
-;   a1.l - output buffer
+;   d0 - number of slices available in the frame buffer (1 to 256 including)
+;   a0 - frame buffer
+;   a1 - output buffer
 ;==============================================================================
 
 		XDEF	_DecodeMonoFrame
 
 _DecodeMonoFrame:
 		MOVEM.L	d2-d7/a2-a6,-(sp)
+		SUBQ.L	#1,d0
+		LEA	sampoff,a2
+		MOVE.W	#0,(a2)
 		MOVE.W	d0,d7                  ; slice counter
 		MOVEA.W	(a0)+,a2               ; loading LMS history
 		MOVEA.W	(a0)+,a3
@@ -44,8 +46,8 @@ nextslice: 	LEA	dequant(pc),a6         ; pointer to lookup table
 ;==============================================================================
 ; Decodes QOA stereo frame to a buffer.
 ; INPUTS:
-;   d0.w - number of slices per channel available in the frame buffer, minus 1
-;          (0 to 255 including)
+;   d0.w - number of slices per channel available in the frame buffer (1 to 256
+;          including)
 ;   a0.l - frame buffer
 ;   a1.l - output buffer
 ;==============================================================================
@@ -54,6 +56,9 @@ nextslice: 	LEA	dequant(pc),a6         ; pointer to lookup table
 
 _DecodeStereoFrame:
 		MOVEM.L	d2-d7/a2-a6,-(sp)
+		SUBQ.L	#1,d0
+		LEA	sampoff,a2
+		MOVE.W	#2,(a2)
 		MOVE.L	a0,-(sp)
 		MOVE.L	a1,-(sp)
 		MOVE.W	d0,-(sp)
@@ -119,7 +124,7 @@ slice:		ROL.L	#8,d0
 		ADDA.W	d4,a6                  ; select lookup table row
 
 		;extract 9 residuals from d0, r[0] is in position already
-		
+
 		MOVE.B	d0,d4
 		BSR.S	DecSamp
 		ROL.L	#3,d0                  ; r[1] in bits 3:1 of d0
@@ -146,9 +151,9 @@ slice:		ROL.L	#8,d0
 		ROL.L	#3,d0                  ; r[8] in bits 3:1 of d0
 		MOVE.B	d0,d4
 		BSR.S	DecSamp
-		
+
 		; now the first bit of r[9] is in d0:0, pull two bits from d1
-		
+
 		LSL.L	#1,d1
 		ROXL.L	#1,d0
 		LSL.L	#1,d1
@@ -156,9 +161,9 @@ slice:		ROL.L	#8,d0
 		LSL.B	#1,d0                  ; r[9] in bits 3:1 of d0
 		MOVE.B	d0,d4
 		BSR.S	DecSamp
-		
+
 		; extract 10 residuals from d1
-		
+
 		ROL.L	#4,d1                  ; r[10] in bits 3:1 of d1
 		MOVE.B	d1,d4
 		BSR.S   DecSamp
@@ -190,10 +195,10 @@ slice:		ROL.L	#8,d0
 		MOVE.B	d1,d4
 		BSR.S   DecSamp
 		RTS
-	
-;==============================================================================	
+
+;==============================================================================
 ; Decodes a single sample. 3-bit encoded sample is in bits 3:1 of register d4
-;==============================================================================	
+;==============================================================================
 
 		; decode residual sample using lookup table, store in d4
 
@@ -222,11 +227,15 @@ DecSamp:	ANDI.W	#$0E,d4                ; extract encoded sample in d4
 		; add predicted sample to reconstructed residual with clamp to
 		; 16-bit signed range, store in d5, code by meynaf from EAB
 
-		ADD.W	d4,d5
-		BVC.S	clamped
-		SPL 	d5
-		EXT.W	d5
-		EORI.W	#$7FFF,d5
+		EXT.L	d4
+		ADD.L	d4,d5
+		CMPI.L	#32767,d5
+		BLE.S	noupper
+		MOVE.W	#32767,d5
+		BRA.S	clamped
+noupper:	CMPI.L	#-32768,d5
+		BGE.S	clamped
+		MOVE.W	#-32768,d5
 
 		; update LMS weights, reconstructed sample in d5, decoded
 		; residual in d4
@@ -257,7 +266,7 @@ h1:		SWAP	d3
 h1neg:  	SUB.W	d4,d3
 
 		; update history vector
-		
+
 update: 	MOVEA.W	a3,a2
 		MOVEA.W	a4,a3
 		MOVEA.W	a5,a4
@@ -266,9 +275,14 @@ update: 	MOVEA.W	a3,a2
 		; store output sample
 
 		MOVE.W 	d5,(a1)+
-;		ADDQ	#2,a1 ; needed for stereo somehow
+		ADDA.W	sampoff(pc),a1
 
 		RTS
+
+; not very effective, should be stored in some register once registers
+; usage is optimized
+
+sampoff:	DC.W	0
 
 dequant:	DC.W	   1,    -1,    3,    -3,    5,    -5,     7,     -7
 		DC.W	   5,    -5,   18,   -18,   32,   -32,    49,    -49
