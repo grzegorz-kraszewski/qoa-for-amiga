@@ -27,7 +27,6 @@
 _DecodeMonoFrame:
 		MOVEM.L	d2-d7/a2-a6,-(sp)
 		MOVE.W	d0,d7                  ; slice counter
-		ADDQ.L	#8,a0                  ; skip frame header
 		MOVEA.W	(a0)+,a2               ; loading LMS history
 		MOVEA.W	(a0)+,a3
 		MOVEA.W	(a0)+,a4
@@ -62,7 +61,6 @@ _DecodeStereoFrame:
 		; L channel pass
 
 		MOVE.W	d0,d7                  ; slice counter
-		ADDQ.L	#8,a0                  ; skip frame header
 		MOVEA.W	(a0)+,a2               ; loading LMS history
 		MOVEA.W	(a0)+,a3
 		MOVEA.W	(a0)+,a4
@@ -83,7 +81,7 @@ nextleft: 	LEA	dequant(pc),a6         ; pointer to lookup table
 		MOVEA.L	(sp)+,a1               ; output buffer
 		MOVEA.L	(sp)+,a0               ; input buffer
 		ADDQ.L	#2,a1                  ; R channel samples
-		LEA	24(a0),a0              ; skip header and L LMS
+		LEA	16(a0),a0              ; skip L channel LMS state
 		MOVEA.W	(a0)+,a2               ; loading LMS history
 		MOVEA.W	(a0)+,a3
 		MOVEA.W	(a0)+,a4
