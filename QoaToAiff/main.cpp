@@ -277,13 +277,12 @@ class App
 	AiffOutput *outFile;
 	ULONG *inBuf;
 	WORD *outBuf;
-
+	void (*decoder)(ULONG*, WORD*, WORD);
 	ULONG convertFrame();
 
 	public:
 
 	BOOL ready;
-
 	App(CallArgs &args);
 	~App();
 	BOOL convertAudio();
@@ -296,7 +295,10 @@ App::App(CallArgs &args)
 	if (!inFile->ready) return;
 	outFile = new AiffOutput(args.getString(1), inFile->samples, inFile->channels,
 		inFile->sampleRate);
-	if (outFile->ready) ready = TRUE;
+	if (!outFile->ready) return;
+	if (inFile->channels == 1) decoder = DecodeMonoFrame;
+	else decoder = DecodeStereoFrame;
+	ready = TRUE;
 }
 
 App::~App()
@@ -315,10 +317,6 @@ ULONG App::convertFrame()
 	UWORD fbytes;
 	UWORD slicesPerChannel;
 	ULONG expectedFrameSize;
-	void (*decoder)(ULONG*, WORD*, WORD);
-
-	if (inFile->channels == 1) decoder = DecodeMonoFrame;
-	else decoder = DecodeStereoFrame;
 
 	if (!inFile->read(header, 8)) return 0;
 	channels = header[0] >> 24;
