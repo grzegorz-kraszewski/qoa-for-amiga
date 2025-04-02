@@ -337,7 +337,7 @@ ULONG App::convertFrame()
 	D("expected frame size %ld bytes.\n", expectedFrameSize);
 	if (!inFile->read(inBuf, fbytes - 8)) return 0;
 	decoder(inBuf, outBuf, slicesPerChannel);
-	if (!outFile->write(outBuf, fsamples << (channels - 1))) return 0;
+	if (!outFile->write(outBuf, fsamples << channels)) return 0;
 	return fsamples;
 }
 
