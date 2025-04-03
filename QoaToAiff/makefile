@@ -3,7 +3,7 @@ LD = g++
 CFLAGS = -fbaserel -O2 -fomit-frame-pointer -mregparm -fno-exceptions -fno-rtti -D__NOLIBBASE__
 LDFLAGS = -nostdlib -fbaserel -nostartfiles -fno-exceptions -fno-rtti
 LIBS = 
-OBJS = start.o main.o frame.o
+OBJS = start.o main.o frame.o timing.o
 EXE = QoaToAiff
 
 all: $(OBJS)
@@ -30,6 +30,7 @@ frame.o: frame.s
 
 # dependencies
 
-main.o: main.cpp
+main.o: main.cpp timing.h
 start.o: start.cpp
 frame.o: frame.s
+timing.o: timing.cpp timing.h

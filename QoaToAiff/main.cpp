@@ -5,9 +5,10 @@
 #include <workbench/startup.h>
 #include <dos/rdargs.h>
 
-extern Library *SysBase, *DOSBase;
+#include "main.h"
+#include "timing.h"
 
-Library *LocaleBase;
+Library *LocaleBase, *TimerBase;
 Catalog *Cat;
 
 #ifdef DEBUG
@@ -370,8 +371,8 @@ BOOL App::convertAudio()
 
 LONG Main(WBStartup *wbmsg)
 {
-	App *app;
 	CallArgs args;
+	TimerDevice timer;
 	LONG result = RETURN_ERROR;
 
 	/* Locale are optional. */
@@ -381,7 +382,7 @@ LONG Main(WBStartup *wbmsg)
 		Cat = OpenCatalogA(NULL, "QoaToAiff.catalog", NULL);
 	}
 
-	if (args.ready)
+	if (args.ready && timer.ready)
 	{
 		App app(args);
 
