@@ -278,6 +278,8 @@ class App
 	AiffOutput *outFile;
 	ULONG *inBuf;
 	WORD *outBuf;
+	StopWatch diskTime;
+	StopWatch decodeTime;
 	void (*decoder)(ULONG*, WORD*, WORD);
 	ULONG convertFrame();
 
@@ -287,6 +289,7 @@ class App
 	App(CallArgs &args);
 	~App();
 	BOOL convertAudio();
+	void reportTimes();
 };
 
 App::App(CallArgs &args)
@@ -319,7 +322,9 @@ ULONG App::convertFrame()
 	UWORD slicesPerChannel;
 	ULONG expectedFrameSize;
 
+	diskTime.start();
 	if (!inFile->read(header, 8)) return 0;
+	diskTime.stop();
 	channels = header[0] >> 24;
 	samprate = header[0] & 0x00FFFFFF;
 	fsamples = header[1] >> 16;
@@ -331,9 +336,15 @@ ULONG App::convertFrame()
 	slicesPerChannel = divu16(fsamples + 19, 20);
 	expectedFrameSize = 8 + (8 << channels) + (slicesPerChannel << (channels + 2));
 	if (expectedFrameSize != fbytes) { Problem("Expected and specified frame size differs."); return 0; }
+	diskTime.start();
 	if (!inFile->read(inBuf, fbytes - 8)) return 0;
+	diskTime.stop();
+	decodeTime.start();
 	decoder(inBuf, outBuf, slicesPerChannel);
+	decodeTime.stop();
+	diskTime.start();
 	if (!outFile->write(outBuf, fsamples << channels)) return 0;
+	diskTime.stop();
 	return fsamples;
 }
 
@@ -360,11 +371,17 @@ BOOL App::convertAudio()
 			}
 
 			PutStr("\n");
+			reportTimes();
 			FreeVec(inBuf);
 		}
 
 		FreeVec(outBuf);
 	}
+}
+
+void App::reportTimes()
+{
+	Printf("disk I/O time: %lu E clocks.\ndecoding time: %lu E clocks.\n", (ULONG)diskTime.total, (ULONG)decodeTime.total );
 }
 
 /*-------------------------------------------------------------------------------------------*/
@@ -385,6 +402,9 @@ LONG Main(WBStartup *wbmsg)
 	if (args.ready && timer.ready)
 	{
 		App app(args);
+		EClockVal dummy;
+
+		TimerDevice::eClock = ReadEClock(&dummy);
 
 		if (app.ready)
 		{

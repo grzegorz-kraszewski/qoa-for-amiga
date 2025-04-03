@@ -17,9 +17,23 @@ class TimerDevice
 	public:
 
 	BOOL ready;
-	ULONG eClock;
+	static ULONG eClock;
 
 	TimerDevice();
 	~TimerDevice();
 	Library* base() { return libbase; }
+};
+
+
+class StopWatch
+{
+	UQUAD last;
+
+	public:
+
+	UQUAD total;
+
+	StopWatch() { total = 0; }
+	void start() { ReadEClock((EClockVal*)&last); }
+	void stop();
 };
