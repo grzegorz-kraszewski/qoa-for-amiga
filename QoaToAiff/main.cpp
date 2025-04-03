@@ -323,8 +323,6 @@ ULONG App::convertFrame()
 	samprate = header[0] & 0x00FFFFFF;
 	fsamples = header[1] >> 16;
 	fbytes = header[1] & 0x0000FFFF;
-	D("QOA frame, %lu channels @ %lu Hz, %lu samples, %lu bytes to read.\n", channels, samprate,
-		fsamples, fbytes);
 	if (channels != inFile->channels) { Problem("Variable number of channels detected."); return 0; }
 	if (samprate != inFile->sampleRate) { Problem("Variable sampling rate detected."); return 0; }
 	if (fsamples == 0) { Problem("Zero samples specified in frame."); return 0; }
@@ -332,7 +330,6 @@ ULONG App::convertFrame()
 	slicesPerChannel = divu16(fsamples + 19, 20);
 	expectedFrameSize = 8 + (8 << channels) + (slicesPerChannel << (channels + 2));
 	if (expectedFrameSize != fbytes) { Problem("Expected and specified frame size differs."); return 0; }
-	D("expected frame size %ld bytes.\n", expectedFrameSize);
 	if (!inFile->read(inBuf, fbytes - 8)) return 0;
 	decoder(inBuf, outBuf, slicesPerChannel);
 	if (!outFile->write(outBuf, fsamples << channels)) return 0;
@@ -343,21 +340,29 @@ BOOL App::convertAudio()
 {
 	ULONG decoded = 0;
 
-	if (outBuf = (WORD*) new UBYTE[5120 << inFile->channels])
+	if (outBuf = (WORD*)AllocVec(5120 << inFile->channels, MEMF_ANY))
 	{
-		if (inBuf = (ULONG*) new UBYTE[QoaFrameSizes[inFile->channels - 1]])
+		if (inBuf = (ULONG*)AllocVec(QoaFrameSizes[inFile->channels - 1], MEMF_ANY))
 		{
 			ULONG fsamples = 0;
 
 			while ((decoded < inFile->samples) && (fsamples = convertFrame()))
 			{
 				decoded += fsamples;
+				Printf("%9ld/%9ld samples converted.\r", decoded, inFile->samples);
+
+				if (CheckSignal(SIGBREAKF_CTRL_C))
+				{
+					PutStr("\nConversion aborted.");
+					break;
+				}
 			}
 
-			delete inBuf;
+			PutStr("\n");
+			FreeVec(inBuf);
 		}
 
-		delete outBuf;
+		FreeVec(outBuf);
 	}
 }
 

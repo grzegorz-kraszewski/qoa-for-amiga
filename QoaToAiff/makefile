@@ -1,6 +1,6 @@
 CC = g++
 LD = g++
-CFLAGS = -fbaserel -O2 -fomit-frame-pointer -mregparm -fno-exceptions -fno-rtti -D__NOLIBBASE__ -DDEBUG
+CFLAGS = -fbaserel -O2 -fomit-frame-pointer -mregparm -fno-exceptions -fno-rtti -D__NOLIBBASE__
 LDFLAGS = -nostdlib -fbaserel -nostartfiles -fno-exceptions -fno-rtti
 LIBS = 
 OBJS = start.o main.o frame.o
