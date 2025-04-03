@@ -2,7 +2,7 @@ CC = g++
 LD = g++
 CFLAGS = -fbaserel -O2 -fomit-frame-pointer -mregparm -fno-exceptions -fno-rtti -D__NOLIBBASE__
 LDFLAGS = -nostdlib -fbaserel -nostartfiles -fno-exceptions -fno-rtti
-LIBS = 
+LIBS = -lmfloat
 OBJS = start.o main.o frame.o timing.o
 EXE = QoaToAiff
 

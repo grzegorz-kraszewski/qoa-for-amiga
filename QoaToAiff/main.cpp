@@ -8,7 +8,7 @@
 #include "main.h"
 #include "timing.h"
 
-Library *LocaleBase, *TimerBase;
+Library *LocaleBase, *TimerBase, *MathIeeeSingBasBase;
 Catalog *Cat;
 
 #ifdef DEBUG
@@ -68,6 +68,16 @@ void IoErrProblem(STRPTR text)
 {
 	Fault(IoErr(), "", FaultBuffer, 128);
 	Printf("%s: %s.\n", text, &FaultBuffer[2]);
+}
+
+FLOAT EClockValToFloat(EClockVal *ev)
+{
+	FLOAT result;
+
+	result = (FLOAT)(ev->ev_lo & 0x7FFFFFFF);
+	if (ev->ev_lo & 0x80000000) result += 2147483648.0f;
+	result += (FLOAT)ev->ev_hi * 4294967296.0f;
+	return result;
 }
 
 /*-------------------------------------------------------------------------------------------*/
@@ -348,6 +358,7 @@ ULONG App::convertFrame()
 	return fsamples;
 }
 
+
 BOOL App::convertAudio()
 {
 	ULONG decoded = 0;
@@ -381,7 +392,12 @@ BOOL App::convertAudio()
 
 void App::reportTimes()
 {
-	Printf("disk I/O time: %lu E clocks.\ndecoding time: %lu E clocks.\n", (ULONG)diskTime.total, (ULONG)decodeTime.total );
+	FLOAT diskSeconds = EClockValToFloat(&diskTime.total) / (FLOAT)TimerDevice::eClock;
+	FLOAT decodeSeconds = EClockValToFloat(&decodeTime.total) / (FLOAT)TimerDevice::eClock;
+	FLOAT diskTicks = (diskSeconds - floorf(diskSeconds)) * 100.0f;
+	FLOAT decodeTicks = (decodeSeconds - floorf(decodeSeconds)) * 100.0f;
+	Printf("disk I/O time: %ld.%02ld seconds.\ndecoding time: %ld.%02ld seconds.\n", (LONG)diskSeconds, 
+		(LONG)diskTicks, (LONG)decodeSeconds, (LONG)decodeTicks);
 }
 
 /*-------------------------------------------------------------------------------------------*/
@@ -399,18 +415,24 @@ LONG Main(WBStartup *wbmsg)
 		Cat = OpenCatalogA(NULL, "QoaToAiff.catalog", NULL);
 	}
 
-	if (args.ready && timer.ready)
+	if (MathIeeeSingBasBase = OpenLibrary("mathieeesingbas.library", 0))
 	{
-		App app(args);
-		EClockVal dummy;
-
-		TimerDevice::eClock = ReadEClock(&dummy);
-
-		if (app.ready)
+		if (args.ready && timer.ready)
 		{
-			if (app.convertAudio()) result = RETURN_OK;
+			App app(args);
+			EClockVal dummy;
+
+			TimerDevice::eClock = ReadEClock(&dummy);
+
+			if (app.ready)
+			{
+				if (app.convertAudio()) result = RETURN_OK;
+			}
 		}
+
+		CloseLibrary(MathIeeeSingBasBase);
 	}
+	else Problem("Can't open mathieeesingbas.library.\n");
 
 	if (LocaleBase)
 	{

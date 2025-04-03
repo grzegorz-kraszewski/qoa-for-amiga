@@ -1,6 +1,8 @@
 #include "main.h"
 #include "timing.h"
 
+typedef unsigned long long UQUAD;
+
 ULONG TimerDevice::eClock;
 
 TimerDevice::TimerDevice()
@@ -22,8 +24,8 @@ TimerDevice::~TimerDevice()
 
 void StopWatch::stop()
 {
-	UQUAD time;
+	EClockVal time;
 
-	ReadEClock((EClockVal*)&time);
-	total += time - last;
+	ReadEClock(&time);
+	*(UQUAD*)&total += *(UQUAD*)&time - *(UQUAD*)&last;
 }

@@ -27,13 +27,13 @@ class TimerDevice
 
 class StopWatch
 {
-	UQUAD last;
+	EClockVal last;
 
 	public:
 
-	UQUAD total;
+	EClockVal total;
 
-	StopWatch() { total = 0; }
-	void start() { ReadEClock((EClockVal*)&last); }
+	StopWatch() { total.ev_hi = 0; total.ev_lo = 0; }
+	void start() { ReadEClock(&last); }
 	void stop();
 };
