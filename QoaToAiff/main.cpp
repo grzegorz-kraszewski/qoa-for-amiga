@@ -89,7 +89,7 @@ FLOAT ULongToFloat(ULONG x)
 	return y;
 }
 
-static inline FLOAT fract(FLOAT x) { return x - floorf(x); }
+static FLOAT fract(FLOAT x) { return x - floorf(x); }
 
 /*-------------------------------------------------------------------------------------------*/
 
@@ -418,13 +418,13 @@ void App::reportTimes()
 
 	FLOAT diskSeconds = EClockValToFloat(&diskTime.total) / (FLOAT)TimerDevice::eClock;
 	FLOAT decodeSeconds = EClockValToFloat(&decodeTime.total) / (FLOAT)TimerDevice::eClock;
-	FLOAT diskTicks = (diskSeconds - floorf(diskSeconds)) * 100.0f;
-	FLOAT decodeTicks = (decodeSeconds - floorf(decodeSeconds)) * 100.0f;
+	FLOAT diskTicks = fract(diskSeconds) * 100.0f;
+	FLOAT decodeTicks = fract(decodeSeconds) * 100.0f;
 	Printf("disk I/O time: %ld.%02ld seconds.\ndecoding time: %ld.%02ld seconds.\n", (LONG)diskSeconds, 
 		(LONG)diskTicks, (LONG)decodeSeconds, (LONG)decodeTicks);
 	speed = inFile->playTime / decodeSeconds;
 	speedfrac = fract(speed) * 100.0f;
-	Printf("decoding speed to realtime: ×%ld.%02ld.\n", (LONG)speed, (LONG)speedfrac);
+	Printf("decoding speed to realtime: \xD7%ld.%02ld.\n", (LONG)speed, (LONG)speedfrac);
 }
 
 /*-------------------------------------------------------------------------------------------*/
