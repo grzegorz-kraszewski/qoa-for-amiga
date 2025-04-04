@@ -80,6 +80,17 @@ FLOAT EClockValToFloat(EClockVal *ev)
 	return result;
 }
 
+FLOAT ULongToFloat(ULONG x)
+{
+	FLOAT y;
+
+	y = (FLOAT)(x & 0x7FFFFFFF);
+	if (x & 0x80000000) y += 2147483648.0f;
+	return y;
+}
+
+static inline FLOAT fract(FLOAT x) { return x - floorf(x); }
+
 /*-------------------------------------------------------------------------------------------*/
 
 class CallArgs
@@ -240,6 +251,7 @@ void AiffOutput::sampleRateConvert(ULONG rate)
 class QoaInput : public SysFile
 {
 	BOOL probeFirstFrame();
+	void printAudioInfo();
 
 	public:
 
@@ -247,6 +259,7 @@ class QoaInput : public SysFile
 	ULONG samples;
 	ULONG channels;
 	ULONG sampleRate;
+	FLOAT playTime;              /* seconds */
 	QoaInput(STRPTR filename);
 };
 
@@ -264,8 +277,8 @@ QoaInput::QoaInput(STRPTR filename) : SysFile(filename, MODE_OLDFILE)
 	if (channels == 0) { Problem("Zero audio channels specified in QOA file."); return; }
 	if (channels > 2) { Problem("QoaToAiff does not handle more than 2 audio channels."); return; }
 	if (sampleRate == 0) { Problem("0 Hz sampling rate specified in QOA file."); return; }
-	Printf("QOA stream: %lu %s samples at %lu Hz.\n", samples, (channels == 1) ? "mono" : "stereo",
-		sampleRate);
+	playTime = ULongToFloat(samples) / (FLOAT)sampleRate;
+	printAudioInfo();
 	ready = TRUE;
 }
 
@@ -278,6 +291,15 @@ BOOL QoaInput::probeFirstFrame()
 	sampleRate = probe & 0x00FFFFFF;
 	if (!seek(-4, OFFSET_CURRENT)) return FALSE;
 	return TRUE;
+}
+
+void QoaInput::printAudioInfo()
+{
+	FLOAT seconds, ticks;
+
+	ticks = fract(playTime) * 100.0f;
+	Printf("QOA stream: %lu %s samples at %lu Hz (%lu.%02lu seconds).\n", samples,
+		(channels == 1) ? "mono" : "stereo", sampleRate, (LONG)playTime, (LONG)ticks);
 }
 
 /*-------------------------------------------------------------------------------------------*/
@@ -392,12 +414,17 @@ BOOL App::convertAudio()
 
 void App::reportTimes()
 {
+	FLOAT speed, speedfrac;
+
 	FLOAT diskSeconds = EClockValToFloat(&diskTime.total) / (FLOAT)TimerDevice::eClock;
 	FLOAT decodeSeconds = EClockValToFloat(&decodeTime.total) / (FLOAT)TimerDevice::eClock;
 	FLOAT diskTicks = (diskSeconds - floorf(diskSeconds)) * 100.0f;
 	FLOAT decodeTicks = (decodeSeconds - floorf(decodeSeconds)) * 100.0f;
 	Printf("disk I/O time: %ld.%02ld seconds.\ndecoding time: %ld.%02ld seconds.\n", (LONG)diskSeconds, 
 		(LONG)diskTicks, (LONG)decodeSeconds, (LONG)decodeTicks);
+	speed = inFile->playTime / decodeSeconds;
+	speedfrac = fract(speed) * 100.0f;
+	Printf("decoding speed to realtime: ×%ld.%02ld.\n", (LONG)speed, (LONG)speedfrac);
 }
 
 /*-------------------------------------------------------------------------------------------*/
