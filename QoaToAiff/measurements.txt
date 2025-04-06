@@ -1,0 +1,9 @@
+Results of measurements on AmiBerry (cycle exact 68020 @ 28 MHz).
+Reading from mounted host directory. Writing to *.hdf.
+Test file "karma.qoa".
+
+2025-04-04 base version
+-----------------------
+disk I/O time: 7.26 seconds.
+decoding time: 253.55 seconds.
+decoding speed to realtime: ×0.74.
