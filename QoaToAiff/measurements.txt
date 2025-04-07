@@ -4,6 +4,13 @@ Test file "karma.qoa".
 
 2025-04-04 base version
 -----------------------
-disk I/O time: 7.26 seconds.
-decoding time: 253.55 seconds.
+disk I/O time: 7.3 seconds.
+decoding time: 253.6 seconds.
 decoding speed to realtime: ×0.74.
+
+2025-04-07 switched I/O to unbuffered
+-------------------------------------
+disk I/O time: 7.4 seconds.
+decoding time: 251.6 seconds.
+decoding speed to realtime: ×0.75.
+

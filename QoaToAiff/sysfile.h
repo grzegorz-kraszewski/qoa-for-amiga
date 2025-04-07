@@ -17,7 +17,8 @@ class SysFile
 	BOOL ready;
 	SysFile(STRPTR path, LONG mode);
 	~SysFile();
-	BOOL read(APTR buffer, LONG bytes);
+	LONG read(APTR buffer, LONG bytes);
+	BOOL mustRead(APTR buffer, LONG bytes);
 	BOOL write(APTR buffer, LONG bytes);
 	BOOL seek(LONG offset, LONG mode);
 };
