@@ -7,6 +7,7 @@
 
 #include "main.h"
 #include "timing.h"
+#include "sysfile.h"
 
 Library *LocaleBase, *TimerBase, *MathIeeeSingBasBase;
 Catalog *Cat;
@@ -118,73 +119,6 @@ class CallArgs
 
 	STRPTR getString(LONG index) { return (STRPTR)vals[index]; }
 };
-
-/*-------------------------------------------------------------------------------------------*/
-
-class SysFile
-{
-	BOOL fileProblem();
-
-	protected:
-
-	BPTR handle;
-	STRPTR filename;
-
-	public:
-
-	BOOL ready;
-
-	SysFile(STRPTR path, LONG mode);
-	~SysFile();
-	BOOL read(APTR buffer, LONG bytes);
-	BOOL write(APTR buffer, LONG bytes);
-	BOOL seek(LONG offset, LONG mode);
-};
-
-BOOL SysFile::fileProblem()
-{
-	Fault(IoErr(), "", FaultBuffer, 128);
-	PutStr("Plik");
-	Printf(" \"%s\": %s.\n", filename, &FaultBuffer[2]);
-	return FALSE;
-}
-
-SysFile::SysFile(STRPTR path, LONG mode)
-{
-	filename = path;
-	ready = FALSE;
-
-	if (handle = Open(filename, mode)) ready = TRUE;
-	else fileProblem();
-}
-
-SysFile::~SysFile()
-{
-	if (handle)
-	{
-		if (!(Close(handle))) fileProblem();
-	}
-}
-
-BOOL SysFile::read(APTR buffer, LONG bytes)
-{
-	if (FRead(handle, buffer, bytes, 1) == 1) return TRUE;
-	else return fileProblem();
-}
-
-
-BOOL SysFile::write(APTR buffer, LONG bytes)
-{
-	if (FWrite(handle, buffer, bytes, 1) == 1) return TRUE;
-	else return fileProblem();
-}
-
-
-BOOL SysFile::seek(LONG offset, LONG mode)
-{
-	if (Seek(handle, offset, mode) >= 0) return TRUE;
-	else return fileProblem();
-}
 
 /*-------------------------------------------------------------------------------------------*/
 
