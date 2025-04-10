@@ -28,12 +28,7 @@ _r;})
 #define MAKE_ID(a, b, c, d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
 char FaultBuffer[128];
 
-/* maximum sizes of QOA frames in bytes WITHOUT 8-byte frame header */
-
-#define QOA_FRAME_MONO      2064   /* 16 (LMS) + 256 * 8 (slices)     */
-#define QOA_FRAME_STEREO    4128   /* 32 (LMS) + 256 * 2 * 8 (slices) */
-
-ULONG QoaFrameSizes[2] = { QOA_FRAME_MONO, QOA_FRAME_STEREO };
+LONG QoaFrameSizes[2] = {2064, 4128};
 
 struct AiffHeader
 {
@@ -184,6 +179,8 @@ void AiffOutput::sampleRateConvert(ULONG rate)
 
 class QoaInput : public SysFile
 {
+	LONG frameSize;
+	UBYTE *buffer;
 	BOOL probeFirstFrame();
 	void printAudioInfo();
 
@@ -195,6 +192,7 @@ class QoaInput : public SysFile
 	ULONG sampleRate;
 	FLOAT playTime;              /* seconds */
 	QoaInput(STRPTR filename);
+	~QoaInput();
 };
 
 QoaInput::QoaInput(STRPTR filename) : SysFile(filename, MODE_OLDFILE)
@@ -213,7 +211,14 @@ QoaInput::QoaInput(STRPTR filename) : SysFile(filename, MODE_OLDFILE)
 	if (sampleRate == 0) { Problem("0 Hz sampling rate specified in QOA file."); return; }
 	playTime = ULongToFloat(samples) / (FLOAT)sampleRate;
 	printAudioInfo();
+	buffer = (UBYTE*)AllocMem(frameSize << 4, MEMF_ANY);
+	if (!buffer) return;
 	ready = TRUE;
+}
+
+QoaInput::~QoaInput()
+{
+	if (buffer) FreeMem(buffer, frameSize << 4);
 }
 
 BOOL QoaInput::probeFirstFrame()
@@ -223,6 +228,7 @@ BOOL QoaInput::probeFirstFrame()
 	if (!read(&probe, 4)) return FALSE;
 	channels = probe >> 24;
 	sampleRate = probe & 0x00FFFFFF;
+	frameSize = 8 + (1032 << channels);                // with header
 	if (!seek(-4, OFFSET_CURRENT)) return FALSE;
 	return TRUE;
 }
