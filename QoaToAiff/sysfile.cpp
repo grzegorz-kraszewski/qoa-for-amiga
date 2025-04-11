@@ -39,38 +39,13 @@ SysFile::~SysFile()
 	}
 }
 
-//---------------------------------------------------------------------------------------------
-// Wrapper on Read(), which only succeeds if all requested bytes have been read. If Read()
-// returns positive value, but less than requested, "unexpected end of file" is reported.
 
-BOOL SysFile::mustRead(APTR buffer, LONG bytes)
+LONG SysFile::size()
 {
-	if (Read(handle, buffer, bytes) == bytes) return TRUE;
-	else return fileProblem();
-}
+	LONG result;
 
-//---------------------------------------------------------------------------------------------
-// Wrapper on Read(), which allows for reading less than requested bytes. It returns Read()
-// result, but in case of error it is reported.
-
-LONG SysFile::read(APTR buffer, LONG bytes)
-{
-	LONG result = Read(handle, buffer, bytes);
-	
-	if (result < 0) fileProblem();
+	if (Seek(handle, OFFSET_END, 0) < 0) { fileProblem(); return 0; }
+	result = Seek(handle, OFFSET_BEGINNING, 0);
+	if (result < 0) { fileProblem(); return 0; }
 	return result;
-}
-
-
-BOOL SysFile::write(APTR buffer, LONG bytes)
-{
-	if (FWrite(handle, buffer, bytes, 1) >= 0) return TRUE;
-	else return fileProblem();
-}
-
-
-BOOL SysFile::seek(LONG offset, LONG mode)
-{
-	if (Seek(handle, offset, mode) >= 0) return TRUE;
-	else return fileProblem();
 }
