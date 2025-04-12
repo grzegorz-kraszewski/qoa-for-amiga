@@ -1,4 +1,5 @@
 #include "main.h"
+#include "errors.h"
 #include "qoainput.h"
 
 #include <proto/exec.h>
@@ -50,7 +51,7 @@ QoaInput::~QoaInput()
 
 LONG QoaInput::QoaFrameSize(LONG samples, LONG channels)
 {
-	return (1 + ((2 + (samples + 19) / 20) << (channels - 1))) << 3;
+	return (1 + ((2 + divu16(samples + 19, 20)) << (channels - 1))) << 3;
 }
 
 

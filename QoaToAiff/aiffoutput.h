@@ -24,13 +24,11 @@ struct AiffHeader
 class AiffOutput : public SysFile
 {
 	AiffHeader header;
-	ULONG audioFrames;
-	UWORD audioChannels;
+	void sampleRateConvert(ULONG rate);
 
 	public:
 
 	BOOL ready;
 
 	AiffOutput(STRPTR filename, ULONG frames, UWORD channels, ULONG samplerate);
-	void sampleRateConvert(ULONG rate);
 };

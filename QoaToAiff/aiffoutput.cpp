@@ -8,8 +8,6 @@ AiffOutput::AiffOutput(STRPTR filename, ULONG frames, UWORD channels, ULONG samp
 	ULONG audioSize;
 
 	ready = FALSE;
-	audioFrames = frames;
-	audioChannels = channels;
 	audioSize = frames << channels;
 
 	if (SysFile::ready)
@@ -27,7 +25,8 @@ AiffOutput::AiffOutput(STRPTR filename, ULONG frames, UWORD channels, ULONG samp
 		header.ssndSize = audioSize + 8;
 		header.ssndPad0 = 0;
 		header.ssndPad1 = 0;
-		if (write(&header, sizeof(AiffHeader))) ready = TRUE;
+		if (write(&header, sizeof(AiffHeader)) == sizeof(AiffHeader)) ready = TRUE;
+		else FileProblem();
 	}
 }
 

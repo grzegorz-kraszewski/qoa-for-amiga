@@ -23,3 +23,4 @@ extern "C"
 
 FLOAT fract(FLOAT x);
 FLOAT ULongToFloat(ULONG x);
+BOOL Problem(LONG error);

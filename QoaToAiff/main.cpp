@@ -6,17 +6,14 @@
 #include <dos/rdargs.h>
 
 #include "main.h"
+#include "errors.h"
 #include "timing.h"
 #include "qoainput.h"
 #include "aiffoutput.h"
 
+
 Library *LocaleBase, *TimerBase, *MathIeeeSingBasBase, *UtilityBase;
 Catalog *Cat;
-
-#define LS()
-char FaultBuffer[128];
-
-LONG QoaFrameSizes[2] = {2064, 4128};
 
 
 extern "C"
@@ -25,16 +22,53 @@ extern "C"
 	void DecodeStereoFrame(ULONG *in, WORD *out, WORD slices);
 }
 
-void Problem(STRPTR text)
+
+const char *ErrorMessages[] = {
+	"QOA file too short, 40 bytes is the minimum size",
+	"QOA file too big, resulting AIFF will be larger than 2 GB",
+	"Not QOA file",
+	"Zero samples specified in the QOA header",
+	"Zero audio channels specified in the first frame",
+	"QoaToAiff does not support multichannel files",
+	"0 Hz sampling rate specified in the first frame",
+	"QOA file is too short for specified number of samples",
+	"QOA file is too long, extra data will be ignored",
+	"Input buffer allocation failed, out of memory?",
+	"Variable channels stream is not supported",
+	"Variable sampling rate is not supported",
+	"QOA frame with zero samples specified",
+	"QOA frame with more than 5120 samples specified",
+	"Specified frame size is different than calculated one",
+	"Can't open utility.library v39+",
+	"Can't open mathieeesingbas.library",
+	"Commandline arguments",
+	""
+};
+
+
+BOOL Problem(LONG error)
 {
-	Printf("%s.\n", text);
+	static char faultbuf[128];
+	STRPTR description = "";
+
+	if (error & IOERR)
+	{
+		LONG doserr = IoErr();
+
+		if (doserr)
+		{
+			Fault(doserr, "", faultbuf, 128);
+			description = &faultbuf[2];
+		}
+		else if (error & FEOF) description = "unexpected end of file";
+
+		Printf("%s: %s.\n", ErrorMessages[error & 0xFFFF], description);
+	}
+	else Printf("%s.\n", ErrorMessages[error]);
+
+	return FALSE;
 }
 
-void IoErrProblem(STRPTR text)
-{
-	Fault(IoErr(), "", FaultBuffer, 128);
-	Printf("%s: %s.\n", text, &FaultBuffer[2]);
-}
 
 FLOAT ULongToFloat(ULONG x)
 {
@@ -44,6 +78,7 @@ FLOAT ULongToFloat(ULONG x)
 	if (x & 0x80000000) y += 2147483648.0f;
 	return y;
 }
+
 
 FLOAT EClockValToFloat(EClockVal *ev)
 {
@@ -78,7 +113,7 @@ class CallArgs
 			ready = TRUE;
 			D("CallArgs $%08lx ready, RDArgs at $%08lx.\n", this, args);
 		}
-		else IoErrProblem("Program arguments");
+		else Problem(E_APP_COMMANDLINE_ARGS | IOERR);
 	}
 
 	~CallArgs()
@@ -149,23 +184,28 @@ ULONG App::convertFrame()
 	frame = inFile->GetFrame();
 	diskTime.stop();
 	if (!frame) return 0;
-	D("frame: %08lx %08lx %08lx %08lx\n", frame[0], frame[1], frame[2], frame[3]);
 	channels = frame[0] >> 24;
 	samprate = frame[0] & 0x00FFFFFF;
 	fsamples = frame[1] >> 16;
 	fbytes = frame[1] & 0x0000FFFF;
-	if (channels != inFile->channels) { Problem("Variable number of channels detected."); return 0; }
-	if (samprate != inFile->sampleRate) { Problem("Variable sampling rate detected."); return 0; }
-	if (fsamples == 0) { Problem("Zero samples specified in frame."); return 0; }
-	if (fsamples > 5120) { Problem("More than 5120 samples in frame specified."); return 0; }
+	if (channels != inFile->channels) { Problem(E_QOA_VARIABLE_CHANNELS); return 0; }
+	if (samprate != inFile->sampleRate) { Problem(E_QOA_VARIABLE_SAMPLING); return 0; }
+	if (fsamples == 0) { Problem(E_QOA_ZERO_SAMPLES_FRAME); return 0; }
+	if (fsamples > 5120) { Problem(E_QOA_TOO_MANY_SAMPLES); return 0; }
 	slicesPerChannel = divu16(fsamples + 19, 20);
-	expectedFrameSize = 8 + (8 << channels) + (slicesPerChannel << (channels + 2));
-	if (expectedFrameSize != fbytes) { Problem("Expected and specified frame size differs."); return 0; }
+	expectedFrameSize = inFile->QoaFrameSize(fsamples, channels);
+	if (expectedFrameSize != fbytes) { Problem(E_QOA_WRONG_FRAME_SIZE); return 0; }
 	decodeTime.start();
 	decoder(&frame[2], outBuf, slicesPerChannel);
 	decodeTime.stop();
 	diskTime.start();
-	if (!outFile->write(outBuf, fsamples << channels)) return 0;
+
+	if (outFile->write(outBuf, fsamples << channels) != (fsamples << channels))
+	{
+		outFile->FileProblem();
+		return 0;
+	}
+
 	diskTime.stop();
 	return fsamples;
 }
@@ -197,6 +237,7 @@ BOOL App::convertAudio()
 	}
 }
 
+
 void App::reportTimes()
 {
 	FLOAT speed, speedfrac;
@@ -211,6 +252,7 @@ void App::reportTimes()
 	speedfrac = fract(speed) * 100.0f;
 	Printf("decoding speed to realtime: \xD7%ld.%02ld.\n", (LONG)speed, (LONG)speedfrac);
 }
+
 
 /*-------------------------------------------------------------------------------------------*/
 
@@ -246,11 +288,11 @@ LONG Main(WBStartup *wbmsg)
 
 			CloseLibrary(UtilityBase);
 		}
-		else Problem("Can't open utility.library v39+.\n");
+		else Problem(E_APP_NO_UTILITY_LIBRARY);
 
 		CloseLibrary(MathIeeeSingBasBase);
 	}
-	else Problem("Can't open mathieeesingbas.library.\n");
+	else Problem(E_APP_NO_MATHIEEE_LIBRARY);
 
 	if (LocaleBase)
 	{

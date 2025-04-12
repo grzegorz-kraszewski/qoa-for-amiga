@@ -1,4 +1,5 @@
 #include "sysfile.h"
+#include "errors.h"
 
 
 BOOL SysFile::FileProblem()
@@ -7,17 +8,8 @@ BOOL SysFile::FileProblem()
 	char *description;
 	LONG error = IoErr();
 
-	Printf("File \"%s\": ", filename);
-
-	if (error)
-	{
-		Fault(IoErr(), "", faultBuffer, 128);
-		description = &faultBuffer[2];
-	}
-	else description = "unexpected end of file";
-
-	Printf("%s.\n", description);
-	return FALSE;
+	Printf("File \"%s\"", filename);
+	return Problem(E_APP_FILE | IOERR | FEOF);
 }
 
 
