@@ -10,7 +10,7 @@
 #include "qoainput.h"
 #include "aiffoutput.h"
 
-Library *LocaleBase, *TimerBase, *MathIeeeSingBasBase;
+Library *LocaleBase, *TimerBase, *MathIeeeSingBasBase, *UtilityBase;
 Catalog *Cat;
 
 #define LS()
@@ -51,6 +51,7 @@ FLOAT EClockValToFloat(EClockVal *ev)
 
 	result = ULongToFloat(ev->ev_lo);
 	if (ev->ev_hi) result += (FLOAT)ev->ev_hi * 4294967296.0f;
+	return result;
 }
 
 FLOAT fract(FLOAT x) { return x - floorf(x); }
@@ -72,13 +73,18 @@ class CallArgs
 		vals[0] = 0;
 		vals[1] = 0;
 		ready = FALSE;
-		if (args = ReadArgs("FROM/A,TO/A", vals, NULL)) ready = TRUE;
+		if (args = ReadArgs("FROM/A,TO/A", vals, NULL))
+		{
+			ready = TRUE;
+			D("CallArgs $%08lx ready, RDArgs at $%08lx.\n", this, args);
+		}
 		else IoErrProblem("Program arguments");
 	}
 
 	~CallArgs()
 	{
 		if (args) FreeArgs(args);
+		D("CallArgs $%08lx deleted, RDArgs at $%08lx freed.\n", this, args);
 	}
 
 	STRPTR getString(LONG index) { return (STRPTR)vals[index]; }
@@ -86,15 +92,10 @@ class CallArgs
 
 /*-------------------------------------------------------------------------------------------*/
 
-
-
-/*-------------------------------------------------------------------------------------------*/
-
 class App
 {
 	QoaInput *inFile;
 	AiffOutput *outFile;
-	ULONG *inBuf;
 	WORD *outBuf;
 	StopWatch diskTime;
 	StopWatch decodeTime;
@@ -114,25 +115,29 @@ App::App(CallArgs &args)
 {
 	ready = FALSE;
 	inFile = new QoaInput(args.getString(0));
-	if (!inFile->ready) return;
 	outFile = new AiffOutput(args.getString(1), inFile->samples, inFile->channels,
 		inFile->sampleRate);
-	if (!outFile->ready) return;
-	if (inFile->channels == 1) decoder = DecodeMonoFrame;
-	else decoder = DecodeStereoFrame;
-	ready = TRUE;
+
+	if (inFile->ready && outFile->ready)
+	{
+		if (inFile->channels == 1) decoder = DecodeMonoFrame;
+		else decoder = DecodeStereoFrame;
+		ready = TRUE;
+		D("App $%08lx ready.\n", this);
+	}
 }
 
 App::~App()
 {
 	if (inFile) delete inFile;
 	if (outFile) delete outFile;
+	D("App $%08lx deleted.\n");
 }
 
 
 ULONG App::convertFrame()
 {
-	ULONG header[2];
+	ULONG *frame;
 	UWORD channels;
 	ULONG samprate;
 	UWORD fsamples;
@@ -141,12 +146,14 @@ ULONG App::convertFrame()
 	ULONG expectedFrameSize;
 
 	diskTime.start();
-	if (!inFile->read(header, 8)) return 0;
+	frame = inFile->GetFrame();
 	diskTime.stop();
-	channels = header[0] >> 24;
-	samprate = header[0] & 0x00FFFFFF;
-	fsamples = header[1] >> 16;
-	fbytes = header[1] & 0x0000FFFF;
+	if (!frame) return 0;
+	D("frame: %08lx %08lx %08lx %08lx\n", frame[0], frame[1], frame[2], frame[3]);
+	channels = frame[0] >> 24;
+	samprate = frame[0] & 0x00FFFFFF;
+	fsamples = frame[1] >> 16;
+	fbytes = frame[1] & 0x0000FFFF;
 	if (channels != inFile->channels) { Problem("Variable number of channels detected."); return 0; }
 	if (samprate != inFile->sampleRate) { Problem("Variable sampling rate detected."); return 0; }
 	if (fsamples == 0) { Problem("Zero samples specified in frame."); return 0; }
@@ -154,11 +161,8 @@ ULONG App::convertFrame()
 	slicesPerChannel = divu16(fsamples + 19, 20);
 	expectedFrameSize = 8 + (8 << channels) + (slicesPerChannel << (channels + 2));
 	if (expectedFrameSize != fbytes) { Problem("Expected and specified frame size differs."); return 0; }
-	diskTime.start();
-	if (!inFile->read(inBuf, fbytes - 8)) return 0;
-	diskTime.stop();
 	decodeTime.start();
-	decoder(inBuf, outBuf, slicesPerChannel);
+	decoder(&frame[2], outBuf, slicesPerChannel);
 	decodeTime.stop();
 	diskTime.start();
 	if (!outFile->write(outBuf, fsamples << channels)) return 0;
@@ -173,27 +177,22 @@ BOOL App::convertAudio()
 
 	if (outBuf = (WORD*)AllocVec(5120 << inFile->channels, MEMF_ANY))
 	{
-		if (inBuf = (ULONG*)AllocVec(QoaFrameSizes[inFile->channels - 1], MEMF_ANY))
+		ULONG fsamples = 0;
+
+		while ((decoded < inFile->samples) && (fsamples = convertFrame()))
 		{
-			ULONG fsamples = 0;
+			decoded += fsamples;
+			Printf("%9ld/%9ld samples converted.\r", decoded, inFile->samples);
 
-			while ((decoded < inFile->samples) && (fsamples = convertFrame()))
+			if (CheckSignal(SIGBREAKF_CTRL_C))
 			{
-				decoded += fsamples;
-				Printf("%9ld/%9ld samples converted.\r", decoded, inFile->samples);
-
-				if (CheckSignal(SIGBREAKF_CTRL_C))
-				{
-					PutStr("\nConversion aborted.");
-					break;
-				}
+				PutStr("\nConversion aborted.");
+				break;
 			}
-
-			PutStr("\n");
-			reportTimes();
-			FreeVec(inBuf);
 		}
 
+		PutStr("\n");
+		reportTimes();
 		FreeVec(outBuf);
 	}
 }
@@ -230,20 +229,24 @@ LONG Main(WBStartup *wbmsg)
 
 	if (MathIeeeSingBasBase = OpenLibrary("mathieeesingbas.library", 0))
 	{
+		if (UtilityBase = OpenLibrary("utility.library", 39))
 		{
-			if (UtilityBase = OpenLibrary("utility.library"))
-		if (args.ready && timer.ready)
-		{
-			App app(args);
-			EClockVal dummy;
-
-			TimerDevice::eClock = ReadEClock(&dummy);
-
-			if (app.ready)
+			if (args.ready && timer.ready)
 			{
-				if (app.convertAudio()) result = RETURN_OK;
+				App app(args);
+				EClockVal dummy;
+
+				TimerDevice::eClock = ReadEClock(&dummy);
+
+				if (app.ready)
+				{
+					if (app.convertAudio()) result = RETURN_OK;
+				}
 			}
+
+			CloseLibrary(UtilityBase);
 		}
+		else Problem("Can't open utility.library v39+.\n");
 
 		CloseLibrary(MathIeeeSingBasBase);
 	}

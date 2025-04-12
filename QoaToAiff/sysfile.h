@@ -11,10 +11,6 @@ class SysFile
 	BPTR handle;
 	STRPTR filename;
 
-	protected:
-
-	BOOL fileProblem();
-
 	public:
 
 	BOOL ready;
@@ -22,8 +18,9 @@ class SysFile
 	~SysFile();
 	LONG read(APTR buffer, LONG bytes) { return Read(handle, buffer, bytes); }
 	LONG write(APTR buffer, LONG bytes) { return Write(handle, buffer, bytes); }
-	LONG seek(LONG offset, LONG mode) { return Seek(handle, mode, offset); }
+	LONG seek(LONG offset, LONG mode) { return Seek(handle, offset, mode); }
 	LONG size();
+	BOOL FileProblem();
 };
 
 #endif    // QOATOAIFF_SYSFILE_H
