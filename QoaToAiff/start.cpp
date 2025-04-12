@@ -58,7 +58,7 @@ __saveds ULONG Start(void)
 }
 
 
-__attribute__((section(".text"))) UBYTE VString[] = "$VER: Unimore 0.1 (11.04.2024)\r\n";
+__attribute__((section(".text"))) UBYTE VString[] = "$VER: QoaToAiff 0.1 (12.04.2025)\r\n";
 
 
 APTR operator new(ULONG size) throw()
