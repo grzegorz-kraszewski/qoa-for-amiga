@@ -131,11 +131,10 @@ class App
 {
 	QoaInput *inFile;
 	AiffOutput *outFile;
-	WORD *outBuf;
 	StopWatch diskTime;
 	StopWatch decodeTime;
 	void (*decoder)(ULONG*, WORD*, WORD);
-	ULONG convertFrame();
+	ULONG convertFrame(WORD *dest);
 
 	public:
 
@@ -170,7 +169,7 @@ App::~App()
 }
 
 
-ULONG App::convertFrame()
+ULONG App::convertFrame(WORD *destBuffer)
 {
 	ULONG *frame;
 	UWORD channels;
@@ -196,8 +195,10 @@ ULONG App::convertFrame()
 	expectedFrameSize = inFile->QoaFrameSize(fsamples, channels);
 	if (expectedFrameSize != fbytes) { Problem(E_QOA_WRONG_FRAME_SIZE); return 0; }
 	decodeTime.start();
-	decoder(&frame[2], outBuf, slicesPerChannel);
+	decoder(&frame[2], destBuffer, slicesPerChannel);
 	decodeTime.stop();
+
+/*
 	diskTime.start();
 
 	if (outFile->write(outBuf, fsamples << channels) != (fsamples << channels))
@@ -207,16 +208,37 @@ ULONG App::convertFrame()
 	}
 
 	diskTime.stop();
+*/
+
 	return fsamples;
 }
 
 
 BOOL App::convertAudio()
 {
+	WORD *outBuf, *bufPtr;
+	BOOL stop = FALSE;
 	ULONG decoded = 0;
 
 	if (outBuf = (WORD*)AllocVec((5120 << inFile->channels) * QOA_FRAMES_PER_BUFFER, MEMF_ANY))
 	{
+		bufPtr = outBuf;
+
+		/* Partial frame which is not the final one is considered an error. */
+		
+		do
+		{
+			if (CheckSignal(SIGBREAKF_CTRL_C))
+			{
+				PutStr("\nConversion aborted.");
+				stop = TRUE;
+			}
+		}
+		while (!stop && (decoded < inFile->samples));
+		
+
+/*
+
 		ULONG fsamples = 0;
 
 		while ((decoded < inFile->samples) && (fsamples = convertFrame()))
@@ -224,16 +246,13 @@ BOOL App::convertAudio()
 			decoded += fsamples;
 			Printf("%9ld/%9ld samples converted.\r", decoded, inFile->samples);
 
-			if (CheckSignal(SIGBREAKF_CTRL_C))
-			{
-				PutStr("\nConversion aborted.");
-				break;
-			}
-		}
 
 		PutStr("\n");
 		reportTimes();
 		FreeVec(outBuf);
+
+*/
+
 	}
 	else return Problem(E_APP_OUT_OF_MEMORY);
 }
