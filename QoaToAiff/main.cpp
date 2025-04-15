@@ -215,7 +215,7 @@ BOOL App::convertAudio()
 {
 	ULONG decoded = 0;
 
-	if (outBuf = (WORD*)AllocVec(5120 << inFile->channels, MEMF_ANY))
+	if (outBuf = (WORD*)AllocVec((5120 << inFile->channels) * QOA_FRAMES_PER_BUFFER, MEMF_ANY))
 	{
 		ULONG fsamples = 0;
 
@@ -235,6 +235,7 @@ BOOL App::convertAudio()
 		reportTimes();
 		FreeVec(outBuf);
 	}
+	else return Problem(E_APP_OUT_OF_MEMORY);
 }
 
 

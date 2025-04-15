@@ -42,5 +42,6 @@ class QoaInput : public SysFile
 	QoaInput(STRPTR filename);
 	~QoaInput();
 	ULONG* GetFrame() { return buffer->GetFrame(); }
+	ULONG FullFrameSize() { return fullFrameSize; }
 	LONG QoaFrameSize(LONG samples, LONG channels);
 };

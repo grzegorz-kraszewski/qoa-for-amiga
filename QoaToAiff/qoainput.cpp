@@ -35,7 +35,7 @@ QoaInput::QoaInput(STRPTR filename) : SysFile(filename, MODE_OLDFILE)
 						return;
 					}
 				}
-				else Problem(E_QOA_NO_BUFFER);
+				else Problem(E_APP_OUT_OF_MEMORY);
 			}
 		}
 		else Problem(E_QOA_LESS_THAN_40_BYTES);
