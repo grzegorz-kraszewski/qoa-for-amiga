@@ -17,9 +17,10 @@
 #define E_QOA_ZERO_SAMPLES_FRAME      11    /* frame with zero samples specified */
 #define E_QOA_TOO_MANY_SAMPLES        12    /* too many samples in a frame specified */
 #define E_QOA_WRONG_FRAME_SIZE        13    /* specified frame size different from calculated */
+#define E_QOA_UNEXP_PARTIAL_FRAME     14    /* partial frame too early in stream */
 
-#define E_APP_NO_UTILITY_LIBRARY      14    /* can't open utility.library v39+ */
-#define E_APP_NO_MATHIEEE_LIBRARY     15    /* can't open mathieeesingbas.library */
-#define E_APP_COMMANDLINE_ARGS        16    /* wrong commandline arguments */
-#define E_APP_FILE                    17    /* DOS problem with a file */
-#define E_APP_OUT_OF_MEMORY           18    /* some allocation failed */
+#define E_APP_NO_UTILITY_LIBRARY      15    /* can't open utility.library v39+ */
+#define E_APP_NO_MATHIEEE_LIBRARY     16    /* can't open mathieeesingbas.library */
+#define E_APP_COMMANDLINE_ARGS        17    /* wrong commandline arguments */
+#define E_APP_FILE                    18    /* DOS problem with a file */
+#define E_APP_OUT_OF_MEMORY           19    /* some allocation failed */

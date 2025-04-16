@@ -39,6 +39,7 @@ const char *ErrorMessages[] = {
 	"QOA frame with zero samples specified",
 	"QOA frame with more than 5120 samples specified",
 	"Specified frame size is different than calculated one",
+	"Unexpected partial QOA frame not at the end of stream",
 	"Can't open utility.library v39+",
 	"Can't open mathieeesingbas.library",
 	"Commandline arguments",
@@ -135,6 +136,7 @@ class App
 	StopWatch decodeTime;
 	void (*decoder)(ULONG*, WORD*, WORD);
 	ULONG convertFrame(WORD *dest);
+	BOOL FlushOutputBuffer(UBYTE *buf, LONG bytes);
 
 	public:
 
@@ -213,46 +215,82 @@ ULONG App::convertFrame(WORD *destBuffer)
 	return fsamples;
 }
 
+#define OUTPUT_BUFFER_SIZE   5120 * QOA_FRAMES_PER_BUFFER  /* in audio timepoints */
+
+BOOL App::FlushOutputBuffer(UBYTE *buf, LONG bytesToWrite)
+{
+	BOOL result = TRUE;
+
+	diskTime.start();
+
+	if (outFile->write(buf, bytesToWrite) == bytesToWrite) result = TRUE;
+	else outFile->FileProblem();
+
+	diskTime.stop();
+	return result;
+}
 
 BOOL App::convertAudio()
 {
-	WORD *outBuf, *bufPtr;
+	UBYTE *outBuf, *bufPtr;
 	BOOL stop = FALSE;
 	ULONG decoded = 0;
+	LONG bufferSize, bytesPerBlock, bytesInBuffer;
 
-	if (outBuf = (WORD*)AllocVec((5120 << inFile->channels) * QOA_FRAMES_PER_BUFFER, MEMF_ANY))
+	bufferSize = OUTPUT_BUFFER_SIZE << inFile->channels;
+	bytesPerBlock = 5120 << inFile->channels;
+	bytesInBuffer = 0;
+
+	if (outBuf = (UBYTE*)AllocVec(bufferSize, MEMF_ANY))
 	{
+		ULONG frameSamples;
+
 		bufPtr = outBuf;
 
-		/* Partial frame which is not the final one is considered an error. */
+		// Partial frame which is not the final one is considered an error. The second condition of
+		// 'while' is needed for files where number of samples is a multiply of 5120 (no partial frame
+		// at the end).
 		
 		do
 		{
+			frameSamples = convertFrame((WORD*)bufPtr);
+
+			if (frameSamples == 5120)
+			{
+				bufPtr += bytesPerBlock;
+				bytesInBuffer += bytesPerBlock;
+				decoded += 5120;
+
+				if (bytesInBuffer >= bufferSize)
+				{
+					if (!FlushOutputBuffer(outBuf, bytesInBuffer)) stop = TRUE;
+					bufPtr = outBuf;
+					bytesInBuffer = 0;
+				}
+			}
+			else if (frameSamples > 0)    /* the last frame */
+			{
+				bytesInBuffer += frameSamples << inFile->channels;
+				decoded += frameSamples;
+				FlushOutputBuffer(outBuf, bytesInBuffer);
+				if (decoded < inFile->samples) Problem(E_QOA_UNEXP_PARTIAL_FRAME);
+				stop = TRUE;
+			}
+
 			if (CheckSignal(SIGBREAKF_CTRL_C))
 			{
 				PutStr("\nConversion aborted.");
+				FlushOutputBuffer(outBuf, bytesInBuffer);
 				stop = TRUE;
 			}
+
+			Printf("%9ld/%9ld samples converted.\r", decoded, inFile->samples);
 		}
 		while (!stop && (decoded < inFile->samples));
-		
-
-/*
-
-		ULONG fsamples = 0;
-
-		while ((decoded < inFile->samples) && (fsamples = convertFrame()))
-		{
-			decoded += fsamples;
-			Printf("%9ld/%9ld samples converted.\r", decoded, inFile->samples);
-
 
 		PutStr("\n");
 		reportTimes();
 		FreeVec(outBuf);
-
-*/
-
 	}
 	else return Problem(E_APP_OUT_OF_MEMORY);
 }
