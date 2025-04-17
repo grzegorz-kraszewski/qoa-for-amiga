@@ -51,6 +51,7 @@ QoaInput::~QoaInput()
 
 LONG QoaInput::QoaFrameSize(LONG samples, LONG channels)
 {
+	if (samples == 0) return 0;
 	return (1 + ((2 + divu16(samples + 19, 20)) << (channels - 1))) << 3;
 }
 
