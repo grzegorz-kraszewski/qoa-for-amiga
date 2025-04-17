@@ -30,7 +30,6 @@ class QoaInput : public SysFile
 	BOOL FirstFrameCheck();
 	BOOL ProbeFirstFrame();
 	void PrintAudioInfo();
-	BOOL Problem(LONG error);
 
 	public:
 

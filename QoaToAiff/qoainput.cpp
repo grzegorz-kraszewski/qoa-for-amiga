@@ -122,13 +122,6 @@ BOOL QoaInput::FirstFrameCheck()
 }
 
 
-BOOL QoaInput::Problem(LONG error)
-{
-	Printf("QOA problem %ld.\n", error);
-	return FALSE;
-}
-
-
 BOOL QoaInput::ProbeFirstFrame()
 {
 	ULONG probe;
