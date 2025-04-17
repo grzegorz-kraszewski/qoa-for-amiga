@@ -29,3 +29,9 @@ disk I/O time: 4.85 seconds.
 decoding time: 251.72 seconds.
 decoding speed to realtime: ×0.75.
 =======================================================
+2025-04-17 v0.2 both in/out buffers (16 QOA frames)
+
+2. AmiBerry
+disk I/O time: 1.11 seconds.
+decoding time: 251.87 seconds.
+decoding speed to realtime: ×0.75.
