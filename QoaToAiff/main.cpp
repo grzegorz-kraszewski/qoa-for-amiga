@@ -135,6 +135,7 @@ class App
 	StopWatch diskTime;
 	StopWatch decodeTime;
 	void (*decoder)(ULONG*, WORD*, WORD);
+	BOOL conversionLoop(UBYTE *buffer);
 	ULONG convertFrame(WORD *dest);
 	BOOL FlushOutputBuffer(UBYTE *buf, LONG bytes);
 
@@ -230,27 +231,11 @@ BOOL App::FlushOutputBuffer(UBYTE *buf, LONG bytesToWrite)
 	return result;
 }
 
-BOOL App::convertAudio()
+BOOL App::conversionLoop(UBYTE* buffer)
 {
-	UBYTE *outBuf, *bufPtr;
-	BOOL stop = FALSE;
-	ULONG decoded = 0;
-	LONG bufferSize, bytesPerBlock, bytesInBuffer;
+	UBYTE *ptr = buffer;
 
-	bufferSize = OUTPUT_BUFFER_SIZE << inFile->channels;
-	bytesPerBlock = 5120 << inFile->channels;
-	bytesInBuffer = 0;
-
-	if (outBuf = (UBYTE*)AllocVec(bufferSize, MEMF_ANY))
-	{
-		ULONG frameSamples;
-
-		bufPtr = outBuf;
-
-		// Partial frame which is not the final one is considered an error. The second condition of
-		// 'while' is needed for files where number of samples is a multiply of 5120 (no partial frame
-		// at the end).
-		
+#if 0		
 		do
 		{
 			frameSamples = convertFrame((WORD*)bufPtr);
@@ -287,10 +272,23 @@ BOOL App::convertAudio()
 			Printf("%9ld/%9ld samples converted.\r", decoded, inFile->samples);
 		}
 		while (!stop && (decoded < inFile->samples));
+#endif 
 
-		PutStr("\n");
-		reportTimes();
-		FreeVec(outBuf);
+	PutStr("\n");
+}
+
+
+BOOL App::convertAudio()
+{
+	UBYTE *buffer;
+	LONG bufsize;
+
+	bufsize = OUTPUT_BUFFER_SIZE << inFile->channels;
+
+	if (buffer = (UBYTE*)AllocVec(bufsize, MEMF_ANY))
+	{
+		if (conversionLoop(buffer)) reportTimes();
+		FreeVec(buffer);
 	}
 	else return Problem(E_APP_OUT_OF_MEMORY);
 }
