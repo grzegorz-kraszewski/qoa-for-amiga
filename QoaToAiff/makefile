@@ -30,8 +30,10 @@ frame.o: frame.s
 
 # dependencies
 
-main.o: main.cpp sysfile.h timing.h
-start.o: start.cpp
-sysfile.o: sysfile.cpp sysfile.h
+aiffoutput.o: aiffoutput.cpp main.h aiffoutput.h sysfile.h
 frame.o: frame.s
-timing.o: timing.cpp timing.h
+main.o: main.cpp main.h errors.h timing.h qoainput.h sysfile.h aiffoutput.h
+qoainput.o: qoainput.cpp main.h errors.h qoainput.h sysfile.h
+start.o: start.cpp
+sysfile.o: sysfile.cpp sysfile.h main.h errors.h
+timing.o: timing.cpp main.h timing.h
