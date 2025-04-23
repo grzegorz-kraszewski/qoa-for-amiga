@@ -128,17 +128,22 @@ class CallArgs
 
 /*-------------------------------------------------------------------------------------------*/
 
+#define OUTPUT_BUFFER_SIZE   5120 * QOA_FRAMES_PER_BUFFER  /* in audio timepoints */
+
+
 class App
 {
 	QoaInput *inFile;
 	AiffOutput *outFile;
+	UBYTE *outBuf, *outPtr;
+	LONG outSize;
 	StopWatch diskTime;
 	StopWatch decodeTime;
 	void (*decoder)(ULONG*, WORD*, WORD);
-	BOOL conversionLoop(UBYTE *buffer);
-	ULONG convertFrame(WORD *dest);
-	BOOL FlushOutputBuffer(UBYTE *buf, LONG bytes);
-
+	ULONG ConvertFrame();
+	BOOL FlushOutputBuffer();
+	BOOL BufferFull() { return (outPtr - outBuf == outSize); }
+	BOOL BufferNotEmpty() { return (outPtr > outBuf); }
 	public:
 
 	BOOL ready;
@@ -147,6 +152,7 @@ class App
 	BOOL convertAudio();
 	void reportTimes();
 };
+
 
 App::App(CallArgs &args)
 {
@@ -157,22 +163,31 @@ App::App(CallArgs &args)
 
 	if (inFile->ready && outFile->ready)
 	{
-		if (inFile->channels == 1) decoder = DecodeMonoFrame;
-		else decoder = DecodeStereoFrame;
-		ready = TRUE;
-		D("App $%08lx ready.\n", this);
+		outSize = OUTPUT_BUFFER_SIZE << inFile->channels;
+
+		if (outBuf = (UBYTE*)AllocVec(outSize, MEMF_ANY))
+		{
+			outPtr = outBuf;
+			if (inFile->channels == 1) decoder = DecodeMonoFrame;
+			else decoder = DecodeStereoFrame;
+			ready = TRUE;
+			D("App $%08lx ready, inFile $%08lx, outFile $%08lx, outBuf[$%08lx, %ld].\n",
+				this, inFile, outFile, outBuf, outSize);
+		}
+		else Problem(E_APP_OUT_OF_MEMORY);
 	}
 }
 
 App::~App()
 {
+	if (outBuf) FreeVec(outBuf);
 	if (inFile) delete inFile;
 	if (outFile) delete outFile;
 	D("App $%08lx deleted.\n");
 }
 
 
-ULONG App::convertFrame(WORD *destBuffer)
+ULONG App::ConvertFrame()
 {
 	ULONG *frame;
 	UWORD channels;
@@ -198,100 +213,75 @@ ULONG App::convertFrame(WORD *destBuffer)
 	expectedFrameSize = inFile->QoaFrameSize(fsamples, channels);
 	if (expectedFrameSize != fbytes) { Problem(E_QOA_WRONG_FRAME_SIZE); return 0; }
 	decodeTime.start();
-	decoder(&frame[2], destBuffer, slicesPerChannel);
+	decoder(&frame[2], (WORD*)outPtr, slicesPerChannel);
+	outPtr += fsamples << inFile->channels;
 	decodeTime.stop();
-
-/*
-	diskTime.start();
-
-	if (outFile->write(outBuf, fsamples << channels) != (fsamples << channels))
-	{
-		outFile->FileProblem();
-		return 0;
-	}
-
-	diskTime.stop();
-*/
-
 	return fsamples;
 }
 
-#define OUTPUT_BUFFER_SIZE   5120 * QOA_FRAMES_PER_BUFFER  /* in audio timepoints */
 
-BOOL App::FlushOutputBuffer(UBYTE *buf, LONG bytesToWrite)
+BOOL App::FlushOutputBuffer()
 {
 	BOOL result = TRUE;
+	LONG bytes = outPtr - outBuf;
 
 	diskTime.start();
 
-	if (outFile->write(buf, bytesToWrite) == bytesToWrite) result = TRUE;
+	if (outFile->write(outBuf, bytes) == bytes)
+	{
+		D("output buffer flush, %ld bytes written.\n", bytes);
+		outPtr = outBuf;
+		result = TRUE;
+	}
 	else outFile->FileProblem();
 
 	diskTime.stop();
 	return result;
 }
 
-BOOL App::conversionLoop(UBYTE* buffer)
-{
-	UBYTE *ptr = buffer;
-
-#if 0		
-		do
-		{
-			frameSamples = convertFrame((WORD*)bufPtr);
-
-			if (frameSamples == 5120)
-			{
-				bufPtr += bytesPerBlock;
-				bytesInBuffer += bytesPerBlock;
-				decoded += 5120;
-
-				if (bytesInBuffer >= bufferSize)
-				{
-					if (!FlushOutputBuffer(outBuf, bytesInBuffer)) stop = TRUE;
-					bufPtr = outBuf;
-					bytesInBuffer = 0;
-				}
-			}
-			else if (frameSamples > 0)    /* the last frame */
-			{
-				bytesInBuffer += frameSamples << inFile->channels;
-				decoded += frameSamples;
-				FlushOutputBuffer(outBuf, bytesInBuffer);
-				if (decoded < inFile->samples) Problem(E_QOA_UNEXP_PARTIAL_FRAME);
-				stop = TRUE;
-			}
-
-			if (CheckSignal(SIGBREAKF_CTRL_C))
-			{
-				PutStr("\nConversion aborted.");
-				FlushOutputBuffer(outBuf, bytesInBuffer);
-				stop = TRUE;
-			}
-
-			Printf("%9ld/%9ld samples converted.\r", decoded, inFile->samples);
-		}
-		while (!stop && (decoded < inFile->samples));
-#endif 
-
-	PutStr("\n");
-}
-
 
 BOOL App::convertAudio()
 {
-	UBYTE *buffer;
-	LONG bufsize;
+	BOOL run = TRUE;
+	LONG fsamples;
+	ULONG decoded = 0;
 
-	bufsize = OUTPUT_BUFFER_SIZE << inFile->channels;
-
-	if (buffer = (UBYTE*)AllocVec(bufsize, MEMF_ANY))
+	do
 	{
-		if (conversionLoop(buffer)) reportTimes();
-		FreeVec(buffer);
+		fsamples = ConvertFrame();
+		D("%ld samples decoded, bufptr advanced to $%08lx.\n", fsamples, outPtr);
+		decoded += fsamples;
+		if (BufferFull()) run = FlushOutputBuffer();
+		Printf("%9ld/%9ld samples converted.\r", decoded, inFile->samples);
+
+		if (fsamples == 0)
+		{
+			run = FALSE;
+		}
+		else if ((fsamples < 5120) && (decoded < inFile->samples))
+		{
+			Problem(E_QOA_UNEXP_PARTIAL_FRAME);
+			run = FALSE;
+		}
+
+		// keyboard break check
+
+		if (CheckSignal(SIGBREAKF_CTRL_C))
+		{
+			PutStr("\nConversion aborted.");
+			run = FALSE;
+		}
+
 	}
-	else return Problem(E_APP_OUT_OF_MEMORY);
+	while (run && (decoded < inFile->samples));
+
+	if (BufferNotEmpty()) run = FlushOutputBuffer();
+	PutStr("\n");
+	if (run) reportTimes();
+	return run;
 }
+
+
 
 
 void App::reportTimes()
