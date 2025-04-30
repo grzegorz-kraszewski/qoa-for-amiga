@@ -25,7 +25,7 @@ extern "C"
 	void DecodeStereoFrame020(ULONG *in, WORD *out, WORD slices);
 }
 
-
+                                                                                                    
 const char *ErrorMessages[E_ENTRY_COUNT] = {
 	"QOA file too short, 40 bytes the minimum size",
 	"QOA file too big, resulting AIFF will be larger than 2 GB",
@@ -45,7 +45,7 @@ const char *ErrorMessages[E_ENTRY_COUNT] = {
 	"Can't open utility.library v39+",
 	"Can't open mathieeesingbas.library",
 	"Commandline arguments",
-	""
+	"Out of memory"
 };
 
 
