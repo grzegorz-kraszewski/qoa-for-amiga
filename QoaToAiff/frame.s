@@ -207,9 +207,8 @@ DecSamp:	ANDI.W	#$0E,d4                ; extract encoded sample in d4
 
 		; calculate predicted sample, store in d5
 
-		MOVE.W	a5,d6                  ; history[-1]
-		MULS.W	d3,d6                  ; *= weights[-1]
-		MOVE.L	d6,d5
+		MOVE.W	a5,d5                  ; history[-1]
+		MULS.W	d3,d5                  ; *= weights[-1]
 		SWAP	d3
 		MOVE.W	a4,d6                  ; history[-2]
 		MULS.W	d3,d6                  ; *= weights[-2]
