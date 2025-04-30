@@ -24,3 +24,5 @@
 #define E_APP_COMMANDLINE_ARGS        17    /* wrong commandline arguments */
 #define E_APP_FILE                    18    /* DOS problem with a file */
 #define E_APP_OUT_OF_MEMORY           19    /* some allocation failed */
+
+#define E_ENTRY_COUNT                 20

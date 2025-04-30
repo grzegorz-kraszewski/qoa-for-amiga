@@ -4,6 +4,7 @@
 
 #include <workbench/startup.h>
 #include <dos/rdargs.h>
+#include <exec/execbase.h>
 
 #include "main.h"
 #include "errors.h"
@@ -20,11 +21,13 @@ extern "C"
 {
 	void DecodeMonoFrame(ULONG *in, WORD *out, WORD slices);
 	void DecodeStereoFrame(ULONG *in, WORD *out, WORD slices);
+	void DecodeMonoFrame020(ULONG *in, WORD *out, WORD slices);
+	void DecodeStereoFrame020(ULONG *in, WORD *out, WORD slices);
 }
 
 
-const char *ErrorMessages[] = {
-	"QOA file too short, 40 bytes is the minimum size",
+const char *ErrorMessages[E_ENTRY_COUNT] = {
+	"QOA file too short, 40 bytes the minimum size",
 	"QOA file too big, resulting AIFF will be larger than 2 GB",
 	"Not QOA file",
 	"Zero samples specified in the QOA header",
@@ -33,7 +36,6 @@ const char *ErrorMessages[] = {
 	"0 Hz sampling rate specified in the first frame",
 	"QOA file is too short for specified number of samples",
 	"QOA file is too long, extra data will be ignored",
-	"Input buffer allocation failed, out of memory?",
 	"Variable channels stream is not supported",
 	"Variable sampling rate is not supported",
 	"QOA frame with zero samples specified",
@@ -168,8 +170,10 @@ App::App(CallArgs &args)
 		if (outBuf = (UBYTE*)AllocVec(outSize, MEMF_ANY))
 		{
 			outPtr = outBuf;
+
 			if (inFile->channels == 1) decoder = DecodeMonoFrame;
 			else decoder = DecodeStereoFrame;
+
 			ready = TRUE;
 			D("App $%08lx ready, inFile $%08lx, outFile $%08lx, outBuf[$%08lx, %ld].\n",
 				this, inFile, outFile, outBuf, outSize);
