@@ -2,15 +2,14 @@ Short:        Decodes Quite OK Audio to AIFF
 Uploader:     grzegorz.kraszewski@gmail.com (Grzegorz Kraszewski)
 Author:       grzegorz.kraszewski@gmail.com (Grzegorz Kraszewski)
 Type:         mus/misc
-Version:      0.2
+Version:      1.0
 Architecture: m68k-amigaos >= 3.0
 
 Quick facts about Quite OK Audio format (qoaformat.org):
 * Lossy, time-domain compression, 16 bits.
 * Quality comparable to MP3 @ 160 kbps.
 * 5:1 fixed compression ratio.
-* 44.1 kHz stereo streams decode in realtime on 68020 @ 28 MHz
-  (to be improved).
+* 44.1 kHz stereo streams decode in realtime on 68020 @ 28 MHz.
 
 QoaToAiff tool decodes QOA files (mono and stereo, multichannel
 is not supported) to uncompressed AIFF files, 16 bit.
@@ -23,6 +22,14 @@ QoaToAiff is an open source project, hosted on GitHub:
 https://github.com/grzegorz-kraszewski/qoa-for-amiga/
 
 HISTORY
+
+1.0 (01.05.2025)
+- Decoder is 4% faster.
+- Localization, Polish translation and catalog descriptor included.
+- Files with extra data at end are now decoded.
+- Fixed crash when input or output file is not opened.
+- Fixed error reporting.
+- Performed data fuzzing tests.
 
 0.2 (24.04.2025)
 - Implemented output buffering, disk operations are faster.
