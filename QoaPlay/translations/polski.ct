@@ -1,0 +1,112 @@
+## version $VER: polski.catalog 1.0 (1.5.25)
+## codeset 0
+## language polski
+;
+MSG_ERR_QOA_FILE_TOO_SHORT
+Plik QOA za krótki, musi mieæ co najmniej 40 bajtów
+; QOA file too short, 40 bytes the minimum size
+;
+MSG_ERR_QOA_FILE_TOO_BIG
+Plik QOA za du¿y, wynikowy plik AIFF bêdzie mia³ ponad 2 GB
+; QOA file too big, resulting AIFF will be larger than 2 GB
+;
+MSG_ERR_NOT_QOA_FILE
+Plik nie jest w formacie QOA
+; Not QOA file
+;
+MSG_ERR_ZERO_SAMPLES_SPECIFIED
+W nag³ówku QOA wyspecifikowano zerow± d³ugo¶æ d¼wiêku
+; Zero samples specified in the QOA header
+;
+MSG_ERR_ZERO_AUDIO_CHANNELS_SPECIFIED
+W nag³ówku QOA wyspecyfikowano zero kana³ów
+; Zero audio channels specified in the first frame
+;
+MSG_ERR_MULTICHANNEL_NOT_SUPPORTED
+QoaToAiff nie obs³uguje plików wielokana³owych
+; QoaToAiff does not support multichannel files
+;
+MSG_ERR_ZERO_SAMPLING_RATE
+W pierwszej ramce QOA podano czêstotliwo¶æ próbkowania 0 Hz
+; 0 Hz sampling rate specified in the first frame
+;
+MSG_ERR_QOA_FILE_SHORTER_THAN_EXPECTED
+Plik QOA jest za krótki na ilo¶æ próbek d¼wiêku z nag³ówka
+; QOA file is too short for specified number of samples
+;
+MSG_ERR_QOA_FILE_LONGER_THAN_EXPECTED
+Plik QOA jest za d³ugi, nadmiarowe dane zostan± zignorowane
+; QOA file is too long, extra data will be ignored
+;
+MSG_ERR_VARIABLE_CHANNELS_NOT_SUPPORTED
+QoaToAiff nie obs³uguje zmiennej ilo¶ci kana³ów
+; Variable channels stream is not supported
+;
+MSG_ERR_VARIABLE_SAMPLERATE_NOT_SUPPORTED
+QoaToAiff nie obs³uguje zmiennej czêstotliwo¶ci próbkowania
+; Variable sampling rate is not supported
+;
+MSG_ERR_ZERO_SAMPLES_FRAME
+Wykryto ramkê QOA o podanej d³ugo¶ci zero próbek.
+; QOA frame with zero samples specified
+;
+MSG_ERR_OVERLONG_FRAME
+Wykryto ramkê QOA o podanej d³ugo¶ci ponad 5120 próbek
+; QOA frame with more than 5120 samples specified
+;
+MSG_ERR_FRAME_SIZE_MISMATCH
+D³ugo¶æ ramki QOA podana w nag³ówku jest inna ni¿ wyliczona
+; Specified frame size is different than calculated one
+;
+MSG_ERR_UNEXPECTED_PARTIAL_FRAME
+Nieoczekiwana niepe³na ramka QOA w ¶rodku pliku
+; Unexpected partial QOA frame not at the end of stream
+;
+MSG_ERR_CANT_OPEN_UTILITY_LIBRARY
+Nie mogê otworzyæ biblioteki utility.library v39+
+; Can't open utility.library v39+
+;
+MSG_ERR_CANT_OPEN_MATHIEEE_LIBRARY
+Nie mogê otworzyæ biblioteki mathieeesingbas.library
+; Can't open mathieeesingbas.library
+;
+MSG_COMMANDLINE_ARGUMENTS
+Argumenty wywo³ania programu
+; Commandline arguments
+;
+MSG_OUT_OF_MEMORY
+Brak wolnej pamiêci
+; Out of memory
+;
+MSG_UNEXPECTED_END_OF_FILE
+nieoczekiwany koniec pliku
+; unexpected end of file
+;
+MSG_DECODING_PROGRESS_INDICATOR
+Skonwertowane %9ld/%9ld próbek audio.\r
+; %9ld/%9ld samples converted.\r
+;
+MSG_CONVERSION_ABORTED
+\nKonwersja przerwana.
+; \nConversion aborted.
+;
+MSG_TIMING_REPORT
+Czas operacji dyskowych: %ld,%02ld sekund.\nCzas dekodowania: %ld,%02ld sekund.\n
+; disk I/O time: %ld.%02ld seconds.\ndecoding time: %ld.%02ld seconds.\n
+;
+MSG_DECODING_SPEED_REPORT
+Dekodowanie %ld,%02ld razy szybciej ni¿ odtwarzanie.\n
+; decoding speed to realtime: \xD7%ld.%02ld.\n
+;
+MSG_QOA_STREAM_INFO
+Strumieñ QOA: %lu próbek %s, próbkowanie %lu Hz (%lu,%02lu sekund).\n
+; QOA stream: %lu %s samples at %lu Hz (%lu.%02lu seconds).\n
+;
+MSG_QOA_STREAM_MONO
+mono
+; mono
+;
+MSG_QOA_STREAM_STEREO
+stereo
+; stereo
+;

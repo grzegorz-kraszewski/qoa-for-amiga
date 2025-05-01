@@ -1,0 +1,28 @@
+Short:        Plays QOA audio files
+Uploader:     grzegorz.kraszewski@gmail.com (Grzegorz Kraszewski)
+Author:       grzegorz.kraszewski@gmail.com (Grzegorz Kraszewski)
+Type:         mus/misc
+Version:      0.1
+Architecture: m68k-amigaos >= 3.0
+
+Quick facts about Quite OK Audio format (qoaformat.org):
+* Lossy, time-domain compression, 16 bits.
+* Quality comparable to MP3 @ 160 kbps.
+* 5:1 fixed compression ratio.
+* 44.1 kHz stereo streams decode in realtime on 68020 @ 28 MHz.
+
+QoaPlay tool decodes and plays QOA files (mono and stereo, multichannel
+is not supported). Currently implemented is 8-bit playback through
+audio.device.
+
+Usage: QoaPlay <QOA file>
+
+Playback can be stopped with standard CTRL+C keycombo.
+ 
+QoaPlay is an open source project, hosted on GitHub:
+https://github.com/grzegorz-kraszewski/qoa-for-amiga/
+
+HISTORY
+
+0.1 (??.??.2025)
+- The first release.
