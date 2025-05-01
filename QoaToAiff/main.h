@@ -1,5 +1,8 @@
 #include <exec/libraries.h>
 
+#define QOATOAIFF_VERSION "1.0"
+#define QOATOAIFF_DATE "01.05.2025"
+
 #define MAKE_ID(a, b, c, d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
 
 #ifdef DEBUG

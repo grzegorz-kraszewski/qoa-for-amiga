@@ -3,6 +3,8 @@
 /* RastPort, 2024                      */
 /*-------------------------------------*/
 
+#include "main.h"
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 
@@ -58,7 +60,8 @@ __saveds ULONG Start(void)
 }
 
 
-__attribute__((section(".text"))) UBYTE VString[] = "$VER: QoaToAiff 0.2 (24.04.2025)\r\n";
+__attribute__((section(".text"))) UBYTE VString[] = "$VER: QoaToAiff " QOATOAIFF_VERSION " ("
+ QOATOAIFF_DATE ")\r\n";
 
 
 APTR operator new(ULONG size) throw()

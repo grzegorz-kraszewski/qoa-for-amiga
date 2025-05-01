@@ -319,6 +319,8 @@ LONG Main(WBStartup *wbmsg)
 		Cat = OpenCatalogA(NULL, "QoaToAiff.catalog", NULL);
 	}
 
+	PutStr("QoaToAiff " QOATOAIFF_VERSION " (" QOATOAIFF_DATE "), Grzegorz Kraszewski.\n");
+
 	if (MathIeeeSingBasBase = OpenLibrary("mathieeesingbas.library", 0))
 	{
 		if (UtilityBase = OpenLibrary("utility.library", 39))
