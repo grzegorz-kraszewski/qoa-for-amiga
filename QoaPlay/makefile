@@ -31,7 +31,7 @@ frame.o: frame.s
 # dependencies
 
 frame.o: frame.s
-main.o: main.cpp main.h errors.h timing.h qoainput.h sysfile.h aiffoutput.h locale.h
+main.o: main.cpp main.h errors.h qoainput.h sysfile.h locale.h
 qoainput.o: qoainput.cpp main.h errors.h locale.h qoainput.h sysfile.h
 start.o: start.cpp main.h
 sysfile.o: sysfile.cpp sysfile.h main.h errors.h

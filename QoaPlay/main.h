@@ -3,6 +3,8 @@
 #define QOAPLAY_VERSION "0.1"
 #define QOAPLAY_DATE "01.05.2025"
 
+#define MAKE_ID(a, b, c, d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
+
 #ifdef DEBUG
 #define D(args...) Printf(args)
 #else

@@ -30,8 +30,6 @@ QoaInput::QoaInput(STRPTR filename) : SysFile(filename, MODE_OLDFILE)
 				{
 					if (buffer->ready)
 					{
-						playTime = ULongToFloat(samples) / (FLOAT)sampleRate;
-						PrintAudioInfo();
 						ready = TRUE;
 						D("QoaInput $%08lx (\"%s\") ready.\n", this, filename);
 						return;
@@ -143,16 +141,6 @@ BOOL QoaInput::ProbeFirstFrame()
 	else return FileProblem();
 }
 
-
-void QoaInput::PrintAudioInfo()
-{
-	FLOAT seconds, ticks;
-
-	ticks = fract(playTime) * 100.0f;
-	Printf(LS(MSG_QOA_STREAM_INFO, "QOA stream: %lu %s samples at %lu Hz (%lu.%02lu seconds).\n"),
-		samples, (channels == 1) ? LS(MSG_QOA_STREAM_MONO, "mono") : LS(MSG_QOA_STREAM_STEREO,
-		"stereo"), sampleRate, (LONG)playTime, (LONG)ticks);
-}
 
 //=============================================================================================
 

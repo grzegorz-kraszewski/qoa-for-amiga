@@ -121,51 +121,33 @@ class CallArgs
 class App
 {
 	QoaInput *inFile;
-	UBYTE *outBuf, *outPtr;
-	LONG outSize;
 	void (*decoder)(ULONG*, WORD*, WORD);
 	ULONG ConvertFrame();
-	BOOL FlushOutputBuffer();
-	BOOL BufferFull() { return (outPtr - outBuf == outSize); }
-	BOOL BufferNotEmpty() { return (outPtr > outBuf); }
 	public:
 
 	BOOL ready;
 	App(CallArgs &args);
 	~App();
-	BOOL convertAudio();
-	void reportTimes();
+	BOOL Play();
 };
 
 
 App::App(CallArgs &args)
 {
 	ready = FALSE;
-	outBuf = NULL;
 	inFile = new QoaInput(args.getString(0));
 
 	if (inFile->ready)
 	{
-		outSize = OUTPUT_BUFFER_SIZE << inFile->channels;
+		if (inFile->channels == 1) decoder = DecodeMonoFrame;
+		else decoder = DecodeStereoFrame;
 
-		if (outBuf = (UBYTE*)AllocVec(outSize, MEMF_ANY))
-		{
-			outPtr = outBuf;
-
-			if (inFile->channels == 1) decoder = DecodeMonoFrame;
-			else decoder = DecodeStereoFrame;
-
-			ready = TRUE;
-			D("App $%08lx ready, inFile $%08lx, outFile $%08lx, outBuf[$%08lx, %ld].\n",
-				this, inFile, outFile, outBuf, outSize);
-		}
-		else Problem(E_APP_OUT_OF_MEMORY);
+		ready = TRUE;
 	}
 }
 
 App::~App()
 {
-	if (outBuf) FreeVec(outBuf);
 	if (inFile) delete inFile;
 	D("App $%08lx deleted.\n");
 }
@@ -194,8 +176,8 @@ ULONG App::ConvertFrame()
 	slicesPerChannel = divu16(fsamples + 19, 20);
 	expectedFrameSize = inFile->QoaFrameSize(fsamples, channels);
 	if (expectedFrameSize != fbytes) { Problem(E_QOA_WRONG_FRAME_SIZE); return 0; }
-	decoder(&frame[2], (WORD*)outPtr, slicesPerChannel);
-	outPtr += fsamples << inFile->channels;
+	//decoder(&frame[2], (WORD*)outPtr, slicesPerChannel);
+	//outPtr += fsamples << inFile->channels;
 	return fsamples;
 }
 
@@ -209,10 +191,8 @@ BOOL App::Play()
 	do
 	{
 		fsamples = ConvertFrame();
-		D("%ld samples decoded, bufptr advanced to $%08lx.\n", fsamples, outPtr);
-		decoded += fsamples;
-		if (BufferFull()) run = FlushOutputBuffer();
-		Printf(LS(MSG_DECODING_PROGRESS_INDICATOR, "%9ld/%9ld samples converted.\r"),
+
+		Printf(LS(MSG_DECODING_PROGRESS_INDICATOR, "%9ld/%9ld samples played.\r"),
 			decoded, inFile->samples);
 
 		if (fsamples == 0)
@@ -229,16 +209,14 @@ BOOL App::Play()
 
 		if (CheckSignal(SIGBREAKF_CTRL_C))
 		{
-			PutStr(LS(MSG_CONVERSION_ABORTED, "\nConversion aborted."));
+			PutStr(LS(MSG_CONVERSION_ABORTED, "\nPlayback stopped."));
 			run = FALSE;
 		}
 
 	}
 	while (run && (decoded < inFile->samples));
 
-	if (BufferNotEmpty()) run = FlushOutputBuffer();
 	PutStr("\n");
-	if (run) reportTimes();
 	return run;
 }
 

@@ -37,7 +37,6 @@ class QoaInput : public SysFile
 	ULONG samples;
 	ULONG channels;
 	ULONG sampleRate;
-	FLOAT playTime;              /* seconds */
 	QoaInput(STRPTR filename);
 	~QoaInput();
 	ULONG* GetFrame() { return buffer->GetFrame(); }
