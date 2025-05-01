@@ -16,6 +16,7 @@
 
 Library *LocaleBase, *TimerBase, *MathIeeeSingBasBase, *UtilityBase;
 Catalog *Cat;
+Locale *Loc;
 
 
 extern "C"
@@ -332,6 +333,7 @@ LONG Main(WBStartup *wbmsg)
 
 	if (LocaleBase = OpenLibrary("locale.library", 39))
 	{
+		Loc = OpenLocale(NULL);
 		Cat = OpenCatalogA(NULL, "QoaToAiff.catalog", NULL);
 		if (Cat) LocalizeErrorMessages();
 	}
@@ -366,6 +368,7 @@ LONG Main(WBStartup *wbmsg)
 	if (LocaleBase)
 	{
 		CloseCatalog(Cat);                 /* NULL-safe */
+		CloseLocale(Loc);                  /* NULL-safe */
 		CloseLibrary(LocaleBase);
 	}
 
