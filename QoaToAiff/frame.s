@@ -38,7 +38,9 @@ _DecodeMonoFrame:
 nextslice: 	LEA	dequant(pc),a6         ; pointer to lookup table
 		MOVE.L	(a0)+,d0               ; the first half of slice
 		MOVE.L	(a0)+,d1               ; the second half of slice
-		BSR.S	slice                  ; decode slice
+		SWAP    d7
+		BSR.S   slice                  ; decode slice
+		SWAP    d7
 		DBF	d7,nextslice
 		MOVEM.L	(sp)+,d2-d7/a2-a6
 		RTS
@@ -76,7 +78,9 @@ _DecodeStereoFrame:
 nextleft: 	LEA	dequant(pc),a6         ; pointer to lookup table
 		MOVE.L	(a0)+,d0               ; the first half of slice
 		MOVE.L	(a0)+,d1               ; the second half of slice
-		BSR.S	slice                  ; decode slice
+		SWAP    d7
+		BSR.S   slice                  ; decode slice
+		SWAP    d7
 		ADDQ.L	#8,a0                  ; skip R channel slice
 		DBF	d7,nextleft
 
@@ -97,8 +101,10 @@ nextright: 	LEA	dequant(pc),a6         ; pointer to lookup table
 		ADDQ	#8,a0                  ; skip L channel slice
 		MOVE.L	(a0)+,d0               ; the first half of slice
 		MOVE.L	(a0)+,d1               ; the second half of slice
-		BSR.S	slice                  ; decode slice
-		DBF	d7,nextright
+		SWAP    d7
+		BSR.S   slice                  ; decode slice
+		SWAP    d7
+		DBF     d7,nextright
 
 		MOVEM.L	(sp)+,d2-d7/a2-a6
 		RTS
@@ -106,16 +112,16 @@ nextright: 	LEA	dequant(pc),a6         ; pointer to lookup table
 ;==============================================================================
 ; Decodes QOA slice of mono/stereo stream.
 ; Registers usage:
-;   d0,d1 - slice (input, modified)
-;   d2,d3 - LMS weights (input, updated)
-;   d4 - residual sample, quantized, dequantized, scaled (modified)
-;   d5 - predicted sample (modified)
-;   d6 - scratch register (modified)
-;   d7 - unused
-;   a0 - unused
-;   a1 - output buffer (input, updated)
-;   a2,a3,a4,a5 - LMS history (input, updated)
-;   a6 - pointer to 'dequant' lookup table (input, modified)
+;   d0,d1 - slice
+;   d2,d3 - LMS weights (updated)
+;   d4 - residual sample, quantized, dequantized, scaled
+;   d5 - predicted sample
+;   d6 - scratch register
+;   d7 - not used (slice loop counter)
+;   a0 - not used (input data pointer)
+;   a1 - output data pointer (advanced)
+;   a2,a3,a4,a5 - LMS history (updated)
+;   a6 - pointer to 'dequant' lookup table (modified)
 ;==============================================================================
 
 slice:		ROL.L	#8,d0
@@ -125,85 +131,37 @@ slice:		ROL.L	#8,d0
 
 		;extract 9 residuals from d0, r[0] is in position already
 
-		MOVE.B	d0,d4
-		BSR.S	DecSamp
-		ROL.L	#3,d0                  ; r[1] in bits 3:1 of d0
-		MOVE.B	d0,d4
-		BSR.S	DecSamp
-		ROL.L	#3,d0                  ; r[2] in bits 3:1 of d0
-		MOVE.B	d0,d4
-		BSR.S	DecSamp
-		ROL.L	#3,d0                  ; r[3] in bits 3:1 of d0
-		MOVE.B	d0,d4
-		BSR.S	DecSamp
-		ROL.L	#3,d0                  ; r[4] in bits 3:1 of d0
-		MOVE.B	d0,d4
-		BSR.S	DecSamp
-		ROL.L	#3,d0                  ; r[5] in bits 3:1 of d0
-		MOVE.B	d0,d4
-		BSR.S	DecSamp
-		ROL.L	#3,d0                  ; r[6] in bits 3:1 of d0
-		MOVE.B	d0,d4
-		BSR.S	DecSamp
-		ROL.L	#3,d0                  ; r[7] in bits 3:1 of d0
-		MOVE.B	d0,d4
-		BSR.S	DecSamp
-		ROL.L	#3,d0                  ; r[8] in bits 3:1 of d0
-		MOVE.B	d0,d4
-		BSR.S	DecSamp
+		MOVE.W  #8,d7              ; can't MOVEQ, upper half in use
+		BSR.S   DecSamp
 
 		; now the first bit of r[9] is in d0:0, pull two bits from d1
 
-		LSL.L	#1,d1
-		ROXL.L	#1,d0
-		LSL.L	#1,d1
-		ROXL.L	#1,d0
-		LSL.B	#1,d0                  ; r[9] in bits 3:1 of d0
-		MOVE.B	d0,d4
+		ADD.L   d1,d1
+		ADDX.B  d0,d0
+		ADD.L   d1,d1
+		ADDX.B  d0,d0
+		ADD.B   d0,d0
+		MOVE.W  #0,d7
 		BSR.S	DecSamp
+		MOVE.L  d1,d0
+		ROL.L   #4,d0
 
-		; extract 10 residuals from d1
+		; extract 10 residuals from d0
 
-		ROL.L	#4,d1                  ; r[10] in bits 3:1 of d1
-		MOVE.B	d1,d4
-		BSR.S   DecSamp
-		ROL.L	#3,d1                  ; r[11] in bits 3:1 of d1
-		MOVE.B	d1,d4
-		BSR.S   DecSamp
-		ROL.L	#3,d1                  ; r[12] in bits 3:1 of d1
-		MOVE.B	d1,d4
-		BSR.S   DecSamp
-		ROL.L	#3,d1                  ; r[13] in bits 3:1 of d1
-		MOVE.B	d1,d4
-		BSR.S   DecSamp
-		ROL.L	#3,d1                  ; r[14] in bits 3:1 of d1
-		MOVE.B	d1,d4
-		BSR.S   DecSamp
-		ROL.L	#3,d1                  ; r[15] in bits 3:1 of d1
-		MOVE.B	d1,d4
-		BSR.S   DecSamp
-		ROL.L	#3,d1                  ; r[16] in bits 3:1 of d1
-		MOVE.B	d1,d4
-		BSR.S   DecSamp
-		ROL.L	#3,d1                  ; r[17] in bits 3:1 of d1
-		MOVE.B	d1,d4
-		BSR.S   DecSamp
-		ROL.L	#3,d1                  ; r[18] in bits 3:1 of d1
-		MOVE.B	d1,d4
-		BSR.S   DecSamp
-		ROL.L	#3,d1                  ; r[19] in bits 3:1 of d1
-		MOVE.B	d1,d4
-		BSR.S   DecSamp
-		RTS
+		MOVE.W  #9,d7
+		BRA.S   DecSamp            ; (ab)use RTS at end of DecSamp
 
 ;==============================================================================
 ; Decodes a single sample. 3-bit encoded sample is in bits 3:1 of register d4
 ;==============================================================================
 
+DecLoop:	ROL.L   #3,d0
+
 		; decode residual sample using lookup table, store in d4
 
-DecSamp:	ANDI.W	#$0E,d4                ; extract encoded sample in d4
-		MOVE.W	(a6,d4.w),d4           ; decode with lookup table
+DecSamp:	MOVEQ   #$E,d4
+		AND.W   d0,d4                ; extract encoded sample in d4
+		MOVE.W  (a6,d4.w),d4           ; decode with lookup table
 
 		; calculate predicted sample, store in d5
 
@@ -275,7 +233,7 @@ update: 	MOVEA.W	a3,a2
 
 		MOVE.W 	d5,(a1)+
 		ADDA.W	sampoff(pc),a1
-
+		DBF     d7,DecLoop
 		RTS
 
 ; not very effective, should be stored in some register once registers
