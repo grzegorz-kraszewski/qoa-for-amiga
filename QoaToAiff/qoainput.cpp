@@ -72,8 +72,11 @@ BOOL QoaInput::FileSizeCheck(LONG realFileSize)
 
 	if (realFileSize >= expectedFileSize)
 	{
-		if (realFileSize == expectedFileSize) return TRUE;
-		else return Problem(E_QOA_FILE_EXTRA_DATA);
+		// file being longer than expected is not critical
+		// try to decode anyway
+
+		if (realFileSize > expectedFileSize) Problem(E_QOA_FILE_EXTRA_DATA);
+		return TRUE;
 	}
 	else return Problem(E_QOA_FILE_TOO_SHORT);
 }
