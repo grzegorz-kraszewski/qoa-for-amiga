@@ -3,6 +3,7 @@ Quite OK Audio codec and tools optimized for M68k architecture.
 
 ## tools
 - **QoaToAiff**, CLI based decoder, decodes QOA files to uncompressed AIFF files.
+- **QoaPlay**, CLI based player, for now 8-bit playback through `audio.device`.
   
 ## build
 QOA tools are compiled with GCC 2.95.3-4, VASM and GNU make on Amiga.
