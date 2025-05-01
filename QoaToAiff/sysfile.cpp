@@ -8,7 +8,7 @@ BOOL SysFile::FileProblem()
 	char *description;
 	LONG error = IoErr();
 
-	Printf("File \"%s\"", filename);
+	//Printf("File \"%s\"", filename);
 	return Problem(E_APP_FILE | IOERR | FEOF);
 }
 

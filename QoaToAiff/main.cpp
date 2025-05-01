@@ -11,6 +11,7 @@
 #include "timing.h"
 #include "qoainput.h"
 #include "aiffoutput.h"
+#include "locale.h"
 
 
 Library *LocaleBase, *TimerBase, *MathIeeeSingBasBase, *UtilityBase;
@@ -26,7 +27,7 @@ extern "C"
 }
 
                                                                                                     
-const char *ErrorMessages[E_ENTRY_COUNT] = {
+char *ErrorMessages[E_ENTRY_COUNT] = {
 	"QOA file too short, 40 bytes the minimum size",
 	"QOA file too big, resulting AIFF will be larger than 2 GB",
 	"Not QOA file",
@@ -49,6 +50,15 @@ const char *ErrorMessages[E_ENTRY_COUNT] = {
 };
 
 
+void LocalizeErrorMessages()
+{
+	for (WORD i = 0; i < E_ENTRY_COUNT; i++)
+	{
+		ErrorMessages[i] = LS(i, ErrorMessages[i]);
+	}
+}
+
+
 BOOL Problem(LONG error)
 {
 	static char faultbuf[128];
@@ -63,9 +73,11 @@ BOOL Problem(LONG error)
 			Fault(doserr, "", faultbuf, 128);
 			description = &faultbuf[2];
 		}
-		else if (error & FEOF) description = "unexpected end of file";
+		else if (error & FEOF) description = LS(MSG_UNEXPECTED_END_OF_FILE, "unexpected end of file");
 
-		Printf("%s: %s.\n", ErrorMessages[error & 0xFFFF], description);
+		error &= 0xFFFF;
+		if (error < E_ENTRY_COUNT) Printf("%s: %s.\n", ErrorMessages[error], description);
+		else Printf("[filename missing]: %s.\n", description);
 	}
 	else Printf("%s.\n", ErrorMessages[error]);
 
@@ -159,6 +171,7 @@ class App
 App::App(CallArgs &args)
 {
 	ready = FALSE;
+	outBuf = NULL;
 	inFile = new QoaInput(args.getString(0));
 	outFile = new AiffOutput(args.getString(1), inFile->samples, inFile->channels,
 		inFile->sampleRate);
@@ -256,7 +269,8 @@ BOOL App::convertAudio()
 		D("%ld samples decoded, bufptr advanced to $%08lx.\n", fsamples, outPtr);
 		decoded += fsamples;
 		if (BufferFull()) run = FlushOutputBuffer();
-		Printf("%9ld/%9ld samples converted.\r", decoded, inFile->samples);
+		Printf(LS(MSG_DECODING_PROGRESS_INDICATOR, "%9ld/%9ld samples converted.\r"),
+			decoded, inFile->samples);
 
 		if (fsamples == 0)
 		{
@@ -272,7 +286,7 @@ BOOL App::convertAudio()
 
 		if (CheckSignal(SIGBREAKF_CTRL_C))
 		{
-			PutStr("\nConversion aborted.");
+			PutStr(LS(MSG_CONVERSION_ABORTED, "\nConversion aborted."));
 			run = FALSE;
 		}
 
@@ -296,11 +310,12 @@ void App::reportTimes()
 	FLOAT decodeSeconds = EClockValToFloat(&decodeTime.total) / (FLOAT)TimerDevice::eClock;
 	FLOAT diskTicks = fract(diskSeconds) * 100.0f;
 	FLOAT decodeTicks = fract(decodeSeconds) * 100.0f;
-	Printf("disk I/O time: %ld.%02ld seconds.\ndecoding time: %ld.%02ld seconds.\n", (LONG)diskSeconds, 
-		(LONG)diskTicks, (LONG)decodeSeconds, (LONG)decodeTicks);
+	Printf(LS(MSG_TIMING_REPORT, "disk I/O time: %ld.%02ld seconds.\ndecoding time: %ld.%02ld seconds.\n"),
+		(LONG)diskSeconds, (LONG)diskTicks, (LONG)decodeSeconds, (LONG)decodeTicks);
 	speed = inFile->playTime / decodeSeconds;
 	speedfrac = fract(speed) * 100.0f;
-	Printf("decoding speed to realtime: \xD7%ld.%02ld.\n", (LONG)speed, (LONG)speedfrac);
+	Printf(LS(MSG_DECODING_SPEED_REPORT, "decoding speed to realtime: \xD7%ld.%02ld.\n"),
+		(LONG)speed, (LONG)speedfrac);
 }
 
 
@@ -308,18 +323,20 @@ void App::reportTimes()
 
 LONG Main(WBStartup *wbmsg)
 {
-	CallArgs args;
 	TimerDevice timer;
 	LONG result = RETURN_ERROR;
+
+	PutStr("QoaToAiff " QOATOAIFF_VERSION " (" QOATOAIFF_DATE "), Grzegorz Kraszewski.\n");
 
 	/* Locale are optional. */
 
 	if (LocaleBase = OpenLibrary("locale.library", 39))
 	{
 		Cat = OpenCatalogA(NULL, "QoaToAiff.catalog", NULL);
+		if (Cat) LocalizeErrorMessages();
 	}
 
-	PutStr("QoaToAiff " QOATOAIFF_VERSION " (" QOATOAIFF_DATE "), Grzegorz Kraszewski.\n");
+	CallArgs args;
 
 	if (MathIeeeSingBasBase = OpenLibrary("mathieeesingbas.library", 0))
 	{

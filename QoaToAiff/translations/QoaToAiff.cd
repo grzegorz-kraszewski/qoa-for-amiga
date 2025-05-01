@@ -1,0 +1,87 @@
+; QoaToAiff
+;
+MSG_ERR_QOA_FILE_TOO_SHORT (//60)
+QOA file too short, 40 bytes the minimum size
+;
+MSG_ERR_QOA_FILE_TOO_BIG (//60)
+QOA file too big, resulting AIFF will be larger than 2 GB
+;
+MSG_ERR_NOT_QOA_FILE (//60)
+Not QOA file
+;
+MSG_ERR_ZERO_SAMPLES_SPECIFIED (//60)
+Zero samples specified in the QOA header
+;
+MSG_ERR_ZERO_AUDIO_CHANNELS_SPECIFIED (//60)
+Zero audio channels specified in the first frame
+;
+MSG_ERR_MULTICHANNEL_NOT_SUPPORTED (//60)
+QoaToAiff does not support multichannel files
+;
+MSG_ERR_ZERO_SAMPLING_RATE (//60)
+0 Hz sampling rate specified in the first frame
+;
+MSG_ERR_QOA_FILE_SHORTER_THAN_EXPECTED (//60)
+QOA file is too short for specified number of samples
+;
+MSG_ERR_QOA_FILE_LONGER_THAN_EXPECTED (//60)
+QOA file is too long, extra data will be ignored
+;
+MSG_ERR_VARIABLE_CHANNELS_NOT_SUPPORTED (//60)
+Variable channels stream is not supported
+;
+MSG_ERR_VARIABLE_SAMPLERATE_NOT_SUPPORTED (//60)
+Variable sampling rate is not supported
+;
+MSG_ERR_ZERO_SAMPLES_FRAME (//60)
+QOA frame with zero samples specified
+;
+MSG_ERR_OVERLONG_FRAME (//60)
+QOA frame with more than 5120 samples specified
+;
+MSG_ERR_FRAME_SIZE_MISMATCH (//60)
+Specified frame size is different than calculated one
+;
+MSG_ERR_UNEXPECTED_PARTIAL_FRAME (//60)
+Unexpected partial QOA frame not at the end of stream
+;
+MSG_ERR_CANT_OPEN_UTILITY_LIBRARY (//60)
+Can't open utility.library v39+
+;
+MSG_ERR_CANT_OPEN_MATHIEEE_LIBRARY (//60)
+Can't open mathieeesingbas.library
+;
+MSG_COMMANDLINE_ARGUMENTS (//32)
+Commandline arguments
+;
+MSG_OUT_OF_MEMORY (//60)
+Out of memory
+;
+MSG_UNEXPECTED_END_OF_FILE (//32)
+unexpected end of file
+;
+MSG_DECODING_PROGRESS_INDICATOR (//60)
+%9ld/%9ld samples converted.\r
+;<samples done>, <samples total>
+;
+MSG_CONVERSION_ABORTED (//60)
+\nConversion aborted.
+;
+MSG_TIMING_REPORT (//)
+disk I/O time: %ld.%02ld seconds.\ndecoding time: %ld.%02ld seconds.\n
+;<seconds>, <hundredths>, <seconds>, <hundredths>
+;
+MSG_DECODING_SPEED_REPORT (//)
+decoding speed to realtime: \xD7%ld.%02ld.\n
+;<integer part>, <hundredths>
+;
+MSG_QOA_STREAM_INFO (//)
+QOA stream: %lu %s samples at %lu Hz (%lu.%02lu seconds).\n
+;<samples>, <mono/stereo>, <sampling rate>, <duration seconds>, <duration hundredths>
+;
+MSG_QOA_STREAM_MONO (//16)
+mono
+;
+MSG_QOA_STREAM_STEREO (//16)
+stereo
+;

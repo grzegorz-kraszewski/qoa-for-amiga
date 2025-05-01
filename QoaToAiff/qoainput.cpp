@@ -1,5 +1,6 @@
 #include "main.h"
 #include "errors.h"
+#include "locale.h"
 #include "qoainput.h"
 
 #include <proto/exec.h>
@@ -10,6 +11,7 @@ QoaInput::QoaInput(STRPTR filename) : SysFile(filename, MODE_OLDFILE)
 	ULONG header[2];
 	LONG realFileSize, expectedFileSize;
 
+	buffer = NULL;
 	ready = FALSE;
 
 	D("Construction of QoaInput $%08lx starts.\n");
@@ -144,8 +146,9 @@ void QoaInput::PrintAudioInfo()
 	FLOAT seconds, ticks;
 
 	ticks = fract(playTime) * 100.0f;
-	Printf("QOA stream: %lu %s samples at %lu Hz (%lu.%02lu seconds).\n", samples,
-		(channels == 1) ? "mono" : "stereo", sampleRate, (LONG)playTime, (LONG)ticks);
+	Printf(LS(MSG_QOA_STREAM_INFO, "QOA stream: %lu %s samples at %lu Hz (%lu.%02lu seconds).\n"),
+		samples, (channels == 1) ? LS(MSG_QOA_STREAM_MONO, "mono") : LS(MSG_QOA_STREAM_STEREO,
+		"stereo"), sampleRate, (LONG)playTime, (LONG)ticks);
 }
 
 //=============================================================================================
