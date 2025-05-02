@@ -2,6 +2,7 @@
 
 extern Library *LocaleBase;
 extern Catalog *Cat;
+extern Locale *Loc;
 
 static inline char* LS(LONG id, char* defstr)
 {

@@ -1,4 +1,4 @@
-## version $VER: polski.catalog 1.0 (1.5.25)
+## version $VER: polski.catalog 1.1 (2.5.25)
 ## codeset 0
 ## language polski
 ;
@@ -83,24 +83,24 @@ nieoczekiwany koniec pliku
 ; unexpected end of file
 ;
 MSG_DECODING_PROGRESS_INDICATOR
-Skonwertowane %9ld/%9ld próbek audio.\r
-; %9ld/%9ld samples converted.\r
+Skonwertowano %s / %s próbek audio.\r
+; %s / %s samples converted.\r
 ;
 MSG_CONVERSION_ABORTED
 \nKonwersja przerwana.
 ; \nConversion aborted.
 ;
 MSG_TIMING_REPORT
-Czas operacji dyskowych: %ld,%02ld sekund.\nCzas dekodowania: %ld,%02ld sekund.\n
-; disk I/O time: %ld.%02ld seconds.\ndecoding time: %ld.%02ld seconds.\n
+Czas operacji dyskowych: %s s.\nCzas dekodowania: %s s.\n
+; disk I/O time: %s seconds.\ndecoding time: %s seconds.\n
 ;
 MSG_DECODING_SPEED_REPORT
-Dekodowanie %ld,%02ld razy szybciej ni¿ odtwarzanie.\n
-; decoding speed to realtime: \xD7%ld.%02ld.\n
+Dekodowanie %s razy szybciej ni¿ odtwarzanie.\n
+; decoding speed to realtime: \xD7%s.\n
 ;
 MSG_QOA_STREAM_INFO
-Strumieñ QOA: %lu próbek %s, próbkowanie %lu Hz (%lu,%02lu sekund).\n
-; QOA stream: %lu %s samples at %lu Hz (%lu.%02lu seconds).\n
+Strumieñ QOA: %s próbek %s, próbkowanie %s Hz (%s s).\n
+; QOA stream: %s %s samples at %s Hz (%s seconds).\n
 ;
 MSG_QOA_STREAM_MONO
 mono

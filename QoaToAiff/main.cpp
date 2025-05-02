@@ -12,6 +12,7 @@
 #include "qoainput.h"
 #include "aiffoutput.h"
 #include "locale.h"
+#include "nicenumber.h"
 
 
 Library *LocaleBase, *TimerBase, *MathIeeeSingBasBase, *UtilityBase;
@@ -263,6 +264,7 @@ BOOL App::convertAudio()
 	BOOL run = TRUE;
 	LONG fsamples;
 	ULONG decoded = 0;
+	NiceInt ni0, ni1;
 
 	do
 	{
@@ -270,8 +272,8 @@ BOOL App::convertAudio()
 		D("%ld samples decoded, bufptr advanced to $%08lx.\n", fsamples, outPtr);
 		decoded += fsamples;
 		if (BufferFull()) run = FlushOutputBuffer();
-		Printf(LS(MSG_DECODING_PROGRESS_INDICATOR, "%9ld/%9ld samples converted.\r"),
-			decoded, inFile->samples);
+		Printf(LS(MSG_DECODING_PROGRESS_INDICATOR, "%s / %s samples converted.\r"),
+			ni0.GetString(decoded), ni1.GetString(inFile->samples));
 
 		if (fsamples == 0)
 		{
@@ -301,22 +303,20 @@ BOOL App::convertAudio()
 }
 
 
-
-
 void App::reportTimes()
 {
-	FLOAT speed, speedfrac;
+	FLOAT speed, diskSeconds, decodeSeconds;
+	NiceTime iot, dect;
 
-	FLOAT diskSeconds = EClockValToFloat(&diskTime.total) / (FLOAT)TimerDevice::eClock;
-	FLOAT decodeSeconds = EClockValToFloat(&decodeTime.total) / (FLOAT)TimerDevice::eClock;
-	FLOAT diskTicks = fract(diskSeconds) * 100.0f;
-	FLOAT decodeTicks = fract(decodeSeconds) * 100.0f;
-	Printf(LS(MSG_TIMING_REPORT, "disk I/O time: %ld.%02ld seconds.\ndecoding time: %ld.%02ld seconds.\n"),
-		(LONG)diskSeconds, (LONG)diskTicks, (LONG)decodeSeconds, (LONG)decodeTicks);
+	diskSeconds = EClockValToFloat(&diskTime.total) / (FLOAT)TimerDevice::eClock;
+	decodeSeconds = EClockValToFloat(&decodeTime.total) / (FLOAT)TimerDevice::eClock;
+
+	Printf(LS(MSG_TIMING_REPORT, "disk I/O time: %s seconds.\ndecoding time: %s seconds.\n"),
+		iot.GetString(diskSeconds), dect.GetString(decodeSeconds));
+
 	speed = inFile->playTime / decodeSeconds;
-	speedfrac = fract(speed) * 100.0f;
-	Printf(LS(MSG_DECODING_SPEED_REPORT, "decoding speed to realtime: \xD7%ld.%02ld.\n"),
-		(LONG)speed, (LONG)speedfrac);
+	Printf(LS(MSG_DECODING_SPEED_REPORT, "decoding speed to realtime: \xD7%s.\n"),
+		iot.GetString(speed));
 }
 
 
