@@ -26,14 +26,13 @@
 _DecodeMonoFrame:
 		MOVEM.L	d2-d7/a2-a6,-(sp)
 		SUBQ.L	#1,d0
-		MOVE.L  #-32768,d1
 		LEA	sampoff,a2
 		MOVE.W	#0,(a2)
 		MOVE.W	d0,d7                  ; slice counter
 		MOVEA.W	(a0)+,a2               ; loading LMS history
 		MOVEA.W	(a0)+,a3
 		MOVEA.W	(a0)+,a4
-		MOVEA.W	(a0)+,a5
+		MOVE.W	(a0)+,d1
 		MOVE.L	(a0)+,d2               ; loading LMS weights
 		MOVE.L	(a0)+,d3
 nextslice: 	LEA	dequant(pc),a6         ; pointer to lookup table
@@ -59,7 +58,6 @@ nextslice: 	LEA	dequant(pc),a6         ; pointer to lookup table
 _DecodeStereoFrame:
 		MOVEM.L	d2-d7/a2-a6,-(sp)
 		SUBQ.L	#1,d0
-		MOVE.L  #-32768,d1
 		LEA	sampoff,a2
 		MOVE.W	#2,(a2)
 		MOVE.L	a0,-(sp)
@@ -72,7 +70,7 @@ _DecodeStereoFrame:
 		MOVEA.W	(a0)+,a2               ; loading LMS history
 		MOVEA.W	(a0)+,a3
 		MOVEA.W	(a0)+,a4
-		MOVEA.W	(a0)+,a5
+		MOVE.W  (a0)+,d1
 		MOVE.L	(a0)+,d2               ; loading LMS weights
 		MOVE.L	(a0)+,d3
 		LEA	16(a0),a0              ; skip R channel LMS state
@@ -94,7 +92,7 @@ nextleft: 	LEA	dequant(pc),a6         ; pointer to lookup table
 		MOVEA.W	(a0)+,a2               ; loading LMS history
 		MOVEA.W	(a0)+,a3
 		MOVEA.W	(a0)+,a4
-		MOVEA.W	(a0)+,a5
+		MOVE.W  (a0)+,d1
 		MOVE.L	(a0)+,d2               ; loading LMS weights
 		MOVE.L	(a0)+,d3
 nextright: 	LEA	dequant(pc),a6         ; pointer to lookup table
@@ -111,7 +109,7 @@ nextright: 	LEA	dequant(pc),a6         ; pointer to lookup table
 ;==============================================================================
 ; Decodes QOA slice of mono/stereo stream.
 ; Registers usage:
-;   d0,d1 - slice
+;   d0   - slice
 ;   d2,d3 - LMS weights (updated)
 ;   d4 - residual sample, quantized, dequantized, scaled
 ;   d5 - predicted sample
@@ -119,7 +117,7 @@ nextright: 	LEA	dequant(pc),a6         ; pointer to lookup table
 ;   d7 - not used (slice loop counter)
 ;   a0 - not used (input data pointer)
 ;   a1 - output data pointer (advanced)
-;   a2,a3,a4,a5 - LMS history (updated)
+;   a2,a3,a4,d1 - LMS history (updated)
 ;   a6 - pointer to 'dequant' lookup table (modified)
 ;==============================================================================
 
@@ -165,7 +163,7 @@ DecSamp:	MOVEQ   #$E,d4
 
 		; calculate predicted sample, store in d5
 
-		MOVE.W	a5,d5                  ; history[-1]
+		MOVE.W	d1,d5                  ; history[-1]
 		MULS.W	d3,d5                  ; *= weights[-1]
 		SWAP	d3
 		MOVE.W	a4,d6                  ; history[-2]
@@ -190,9 +188,9 @@ DecSamp:	MOVEQ   #$E,d4
 		BLE.S	noupper
 		MOVE.W	#32767,d5
 		BRA.S	clamped
-noupper:	CMP.L	d1,d5
+noupper:	CMPI.L	#-32768,d5
 		BGE.S	clamped
-		MOVE.W	d1,d5
+		MOVE.W	#-32768,d5
 
 		; update LMS weights, reconstructed sample in d5, decoded
 		; residual in d4
@@ -216,7 +214,7 @@ h2:		MOVE.W	a4,d6
 		BRA.S	h1
 h2neg:		SUB.W	d4,d3
 h1:		SWAP	d3
-		MOVE.W	a5,d6
+		MOVE.W	d1,d6
 		BMI.S	h1neg
 		ADD.W	d4,d3
 		BRA.S	update
@@ -224,10 +222,10 @@ h1neg:  	SUB.W	d4,d3
 
 		; update history vector
 
-update: 	MOVEA.W	a3,a2
-		MOVEA.W	a4,a3
-		MOVEA.W	a5,a4
-		MOVEA.W	d5,a5
+update: 	MOVEA.W a3,a2
+		MOVEA.W a4,a3
+		MOVEA.W d1,a4
+		MOVE.W  d5,d1
 
 		; store output sample
 
