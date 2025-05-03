@@ -26,6 +26,7 @@
 _DecodeMonoFrame:
 		MOVEM.L	d2-d7/a2-a6,-(sp)
 		SUBQ.L	#1,d0
+		MOVE.L  #-32768,d1
 		LEA	sampoff,a2
 		MOVE.W	#0,(a2)
 		MOVE.W	d0,d7                  ; slice counter
@@ -37,7 +38,6 @@ _DecodeMonoFrame:
 		MOVE.L	(a0)+,d3
 nextslice: 	LEA	dequant(pc),a6         ; pointer to lookup table
 		MOVE.L	(a0)+,d0               ; the first half of slice
-		MOVE.L	(a0)+,d1               ; the second half of slice
 		SWAP    d7
 		BSR.S   slice                  ; decode slice
 		SWAP    d7
@@ -59,6 +59,7 @@ nextslice: 	LEA	dequant(pc),a6         ; pointer to lookup table
 _DecodeStereoFrame:
 		MOVEM.L	d2-d7/a2-a6,-(sp)
 		SUBQ.L	#1,d0
+		MOVE.L  #-32768,d1
 		LEA	sampoff,a2
 		MOVE.W	#2,(a2)
 		MOVE.L	a0,-(sp)
@@ -77,7 +78,6 @@ _DecodeStereoFrame:
 		LEA	16(a0),a0              ; skip R channel LMS state
 nextleft: 	LEA	dequant(pc),a6         ; pointer to lookup table
 		MOVE.L	(a0)+,d0               ; the first half of slice
-		MOVE.L	(a0)+,d1               ; the second half of slice
 		SWAP    d7
 		BSR.S   slice                  ; decode slice
 		SWAP    d7
@@ -100,7 +100,6 @@ nextleft: 	LEA	dequant(pc),a6         ; pointer to lookup table
 nextright: 	LEA	dequant(pc),a6         ; pointer to lookup table
 		ADDQ	#8,a0                  ; skip L channel slice
 		MOVE.L	(a0)+,d0               ; the first half of slice
-		MOVE.L	(a0)+,d1               ; the second half of slice
 		SWAP    d7
 		BSR.S   slice                  ; decode slice
 		SWAP    d7
@@ -136,15 +135,16 @@ slice:		ROL.L	#8,d0
 
 		; now the first bit of r[9] is in d0:0, pull two bits from d1
 
-		ADD.L   d1,d1
+		MOVE.L  (a0),d4
+		ADD.L   d4,d4
 		ADDX.B  d0,d0
-		ADD.L   d1,d1
+		ADD.L   d4,d4
 		ADDX.B  d0,d0
 		ADD.B   d0,d0
 		MOVE.W  #0,d7
 		BSR.S	DecSamp
-		MOVE.L  d1,d0
-		ROL.L   #4,d0
+		MOVE.L  (a0)+,d0
+		ROL.L   #6,d0
 
 		; extract 10 residuals from d0
 
@@ -190,9 +190,9 @@ DecSamp:	MOVEQ   #$E,d4
 		BLE.S	noupper
 		MOVE.W	#32767,d5
 		BRA.S	clamped
-noupper:	CMPI.L	#-32768,d5
+noupper:	CMP.L	d1,d5
 		BGE.S	clamped
-		MOVE.W	#-32768,d5
+		MOVE.W	d1,d5
 
 		; update LMS weights, reconstructed sample in d5, decoded
 		; residual in d4
