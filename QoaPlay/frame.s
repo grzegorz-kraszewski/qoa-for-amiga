@@ -1,9 +1,14 @@
 ;
 ; QOA decoder
 
-; This version stores only upper byte of each sample (8-bit playback).
-; Stereo decodes to two separate buffers, the second one always is 5120 bytes
-; after the first.
+;=============================================================================
+; FRAME DECODER FOR PAULA 8-BIT PLAYBACK
+;
+; Mono decoder stores higher bytes of samples in a buffer. Stereo decoder
+; stores higher bytes of samples in two separate buffers, L channel buffer
+; address is passed in a1, R channel buffer address is always 5120 bytes higher
+; and is computed.
+;==============================================================================
 
 ;==============================================================================
 ; STEREO DECODING STRATEGY
@@ -25,20 +30,14 @@
 ;   a1 - output buffer
 ;==============================================================================
 
-		XDEF	_DecodeMonoFrame
+		XDEF    _DecodeMonoFrame
 
 _DecodeMonoFrame:
 		MOVEM.L d2-d7/a2-a6,-(sp)
 		SUBQ.L  #1,d0
 		MOVE.W  d0,d7                  ; slice counter
-		MOVEA.W (a0)+,a2               ; loading LMS history
-		MOVEA.W (a0)+,a3
-		MOVEA.W (a0)+,a4
-		MOVE.W  (a0)+,d1
-		MOVE.L  (a0)+,d2               ; loading LMS weights
-		MOVE.L  (a0)+,d3
-nextslice: 	LEA     dequant(pc),a6         ; pointer to lookup table
-		SWAP    d7
+		BSR.S   loadlms
+nextslice:	SWAP    d7
 		BSR.S   slice                  ; decode slice
 		SWAP    d7
 		DBF     d7,nextslice
@@ -54,7 +53,7 @@ nextslice: 	LEA     dequant(pc),a6         ; pointer to lookup table
 ;   a1.l - output buffer
 ;==============================================================================
 
-		XDEF	_DecodeStereoFrame
+		XDEF    _DecodeStereoFrame
 
 _DecodeStereoFrame:
 		MOVEM.L d2-d7/a2-a6,-(sp)
@@ -66,12 +65,7 @@ _DecodeStereoFrame:
 		; L channel pass
 
 		MOVE.W  d0,d7                  ; slice counter
-		MOVEA.W (a0)+,a2               ; loading LMS history
-		MOVEA.W (a0)+,a3
-		MOVEA.W (a0)+,a4
-		MOVE.W  (a0)+,d1
-		MOVE.L  (a0)+,d2               ; loading LMS weights
-		MOVE.L  (a0)+,d3
+		BSR.S   loadlms
 		LEA     16(a0),a0              ; skip R channel LMS state
 nextleft:	SWAP    d7
 		BSR.S   slice                  ; decode slice
@@ -83,22 +77,26 @@ nextleft:	SWAP    d7
 
 		MOVE.W  (sp)+,d7               ; slice counter
 		MOVEA.L (sp)+,a1               ; output buffer
-		ADDA.W  #5120,a1
 		MOVEA.L (sp)+,a0               ; input buffer
+		ADDA.W  #5120,a1               ; R channel output
 		LEA     16(a0),a0              ; skip L channel LMS state
-		MOVEA.W (a0)+,a2               ; loading LMS history
-		MOVEA.W (a0)+,a3
-		MOVEA.W (a0)+,a4
-		MOVE.W  (a0)+,d1
-		MOVE.L  (a0)+,d2               ; loading LMS weights
-		MOVE.L  (a0)+,d3
+		BSR.S   loadlms
 nextright:	ADDQ    #8,a0                  ; skip L channel slice
 		SWAP    d7
 		BSR.S   slice                  ; decode slice
 		SWAP    d7
 		DBF     d7,nextright
 
-		MOVEM.L	(sp)+,d2-d7/a2-a6
+		MOVEM.L (sp)+,d2-d7/a2-a6
+		RTS
+
+
+loadlms:	MOVEA.W (a0)+,a2               ; loading LMS history
+		MOVEA.W (a0)+,a3
+		MOVEA.W (a0)+,a4
+		MOVE.W  (a0)+,d1
+		MOVE.L  (a0)+,d2               ; loading LMS weights
+		MOVE.L  (a0)+,d3
 		RTS
 
 ;==============================================================================
@@ -116,12 +114,12 @@ nextright:	ADDQ    #8,a0                  ; skip L channel slice
 ;   a6 - pointer to 'dequant' lookup table (modified)
 ;==============================================================================
 
-slice:		LEA     dequant(pc),a6     ; lookup table address
-		MOVE.L  (a0)+,d0           ; the first half of the slice
+slice:		MOVE.L  (a0)+,d0
+		LEA     dequant(pc),a6
 		ROL.L   #8,d0
 		MOVE.B  d0,d4
-		ANDI.W  #$00F0,d4          ; scale factor in bits 7:4 of d4
-		ADDA.W  d4,a6              ; select lookup table row
+		ANDI.W  #$00F0,d4              ; scale factor in bits 7:4 of d4
+		ADDA.W  d4,a6                  ; select lookup table row
 
 		;extract 9 residuals from d0, r[0] is in position already
 
@@ -160,21 +158,21 @@ DecSamp:	MOVEQ   #$E,d4
 
 		; calculate predicted sample, store in d5
 
-		MOVE.W	d1,d5                  ; history[-1]
-		MULS.W	d3,d5                  ; *= weights[-1]
-		SWAP	d3
-		MOVE.W	a4,d6                  ; history[-2]
-		MULS.W	d3,d6                  ; *= weights[-2]
-		ADD.L	d6,d5
-		MOVE.W	a3,d6                  ; history[-3]
-		MULS.W	d2,d6                  ; *= weights[-3]
-		ADD.L	d6,d5
-		SWAP	d2
-		MOVE.W	a2,d6                  ; history[-4]
-		MULS.W	d2,d6                  ; *= weights[-4]
-		ADD.L	d6,d5
-		ASR.L	#6,d5
-		ASR.L	#7,d5                  ; predicted sample in d5
+		MOVE.W  d1,d5                  ; history[-1]
+		MULS.W  d3,d5                  ; *= weights[-1]
+		SWAP    d3
+		MOVE.W  a4,d6                  ; history[-2]
+		MULS.W  d3,d6                  ; *= weights[-2]
+		ADD.L   d6,d5
+		MOVE.W  a3,d6                  ; history[-3]
+		MULS.W  d2,d6                  ; *= weights[-3]
+		ADD.L   d6,d5
+		SWAP    d2
+		MOVE.W  a2,d6                  ; history[-4]
+		MULS.W  d2,d6                  ; *= weights[-4]
+		ADD.L   d6,d5
+		ASR.L   #6,d5
+		ASR.L   #7,d5                  ; predicted sample in d5
 
 		; add predicted sample to reconstructed residual with clamp to
 		; 16-bit signed range, store in d5
@@ -192,7 +190,7 @@ DecSamp:	MOVEQ   #$E,d4
 		; update LMS weights, reconstructed sample in d5, decoded
 		; residual in d4
 
-clamped:	ASR.W	#4,d4                  ; scale residual signal down
+clamped:	ASR.W   #4,d4                  ; scale residual signal down
 
 		MOVE.W  a2,d6
 		BMI.S   h4neg
@@ -231,8 +229,6 @@ update: 	MOVEA.W a3,a2
 		DBF     d7,DecLoop
 		RTS
 
-; not very effective, should be stored in some register once registers
-; usage is optimized
 
 dequant:	DC.W       1,    -1,    3,    -3,    5,    -5,     7,     -7
 		DC.W       5,    -5,   18,   -18,   32,   -32,    49,    -49
