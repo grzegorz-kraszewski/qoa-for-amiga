@@ -24,7 +24,7 @@ PlayerPaula::PlayerPaula(LONG frequency)
 
 	if (port = CreateMsgPort())
 	{
-		for (WORD i = 0; i < 4; i++)
+		for (WORD i = 3; i >= 0; i--)
 		{
 			if (!(reqs[i] = (IOAudio*)CreateIORequest(port, sizeof(IOAudio))))
 			{
@@ -68,7 +68,7 @@ PlayerPaula::~PlayerPaula()
 		D("PlayerPaula[$%08lx]: device closed.\n", this);
 	}
 
-	for (WORD i = 0; i < 4; i++)
+	for (WORD i = 3; i >= 0; i--)
 	{
 		if (reqs[i])
 		{
@@ -113,7 +113,7 @@ void PlayerPaula::InitReqClones()
 	reqs[2]->ioa_Request.io_Unit = (Unit*)left;
 	reqs[3]->ioa_Request.io_Unit = (Unit*)right;
 
-	for (WORD i = 0; i < 4; i++)
+	for (WORD i = 3; i >= 0; i--)
 	{
 		reqs[i]->ioa_Cycles = 1;
 		reqs[i]->ioa_Period = period;
