@@ -31,3 +31,4 @@ PlayerPaulaMono8::~PlayerPaulaMono8()
 	if (buf0) FreeMem(buf0, PLAYBACK_BUFFER_SIZE * 2);
 	D("PlayerPaulaMono8[$%08lx]: chip RAM buffers at $%08lx freed.\n", this, buf0);
 }
+

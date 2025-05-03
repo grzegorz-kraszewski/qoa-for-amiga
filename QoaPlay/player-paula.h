@@ -7,6 +7,8 @@
 
 class PlayerPaula
 {
+	void InitReqClones();
+
 	protected:
 
 	UWORD period;

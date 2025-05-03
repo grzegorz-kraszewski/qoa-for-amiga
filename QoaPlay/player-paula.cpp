@@ -48,6 +48,7 @@ PlayerPaula::PlayerPaula(LONG frequency)
 				right = (UBYTE)reqs[0]->ioa_Request.io_Unit & PAULA_RIGHT_CHANNELS;
 				D("PlayerPaula[$%08lx]: using $%ld as left channel, $%ld as right channel.\n",
 					this, left, right);
+				InitReqClones();
 			}
 			else
 			{
@@ -99,6 +100,26 @@ void PlayerPaula::InitReq0()
 	reqs[0]->ioa_Request.io_Message.mn_Node.ln_Pri = 120;
 }
 
+// IoRequests 0 and 2 are for stereo L
+// IoRequests 1 and 3 are for stereo R
+
+void PlayerPaula::InitReqClones()
+{
+	reqs[1]->ioa_AllocKey = reqs[0]->ioa_AllocKey;
+	reqs[2]->ioa_AllocKey = reqs[0]->ioa_AllocKey;
+	reqs[3]->ioa_AllocKey = reqs[0]->ioa_AllocKey;
+	reqs[0]->ioa_Request.io_Unit = (Unit*)left;
+	reqs[1]->ioa_Request.io_Unit = (Unit*)right;
+	reqs[2]->ioa_Request.io_Unit = (Unit*)left;
+	reqs[3]->ioa_Request.io_Unit = (Unit*)right;
+
+	for (WORD i = 0; i < 4; i++)
+	{
+		reqs[i]->ioa_Cycles = 1;
+		reqs[i]->ioa_Period = period;
+		reqs[i]->ioa_Volume = 64;
+	}
+}
 
 void PlayerPaula::AudioProblem(LONG err)
 {
