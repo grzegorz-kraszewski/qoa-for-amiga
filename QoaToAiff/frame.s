@@ -32,12 +32,11 @@ _DecodeMonoFrame:
 		MOVEA.W	(a0)+,a2               ; loading LMS history
 		MOVEA.W	(a0)+,a3
 		MOVEA.W	(a0)+,a4
-		MOVEA.W	(a0)+,a5
+		MOVE.W	(a0)+,d1
 		MOVE.L	(a0)+,d2               ; loading LMS weights
 		MOVE.L	(a0)+,d3
 nextslice: 	LEA	dequant(pc),a6         ; pointer to lookup table
 		MOVE.L	(a0)+,d0               ; the first half of slice
-		MOVE.L	(a0)+,d1               ; the second half of slice
 		SWAP    d7
 		BSR.S   slice                  ; decode slice
 		SWAP    d7
@@ -71,13 +70,12 @@ _DecodeStereoFrame:
 		MOVEA.W	(a0)+,a2               ; loading LMS history
 		MOVEA.W	(a0)+,a3
 		MOVEA.W	(a0)+,a4
-		MOVEA.W	(a0)+,a5
+		MOVE.W  (a0)+,d1
 		MOVE.L	(a0)+,d2               ; loading LMS weights
 		MOVE.L	(a0)+,d3
 		LEA	16(a0),a0              ; skip R channel LMS state
 nextleft: 	LEA	dequant(pc),a6         ; pointer to lookup table
 		MOVE.L	(a0)+,d0               ; the first half of slice
-		MOVE.L	(a0)+,d1               ; the second half of slice
 		SWAP    d7
 		BSR.S   slice                  ; decode slice
 		SWAP    d7
@@ -94,13 +92,12 @@ nextleft: 	LEA	dequant(pc),a6         ; pointer to lookup table
 		MOVEA.W	(a0)+,a2               ; loading LMS history
 		MOVEA.W	(a0)+,a3
 		MOVEA.W	(a0)+,a4
-		MOVEA.W	(a0)+,a5
+		MOVE.W  (a0)+,d1
 		MOVE.L	(a0)+,d2               ; loading LMS weights
 		MOVE.L	(a0)+,d3
 nextright: 	LEA	dequant(pc),a6         ; pointer to lookup table
 		ADDQ	#8,a0                  ; skip L channel slice
 		MOVE.L	(a0)+,d0               ; the first half of slice
-		MOVE.L	(a0)+,d1               ; the second half of slice
 		SWAP    d7
 		BSR.S   slice                  ; decode slice
 		SWAP    d7
@@ -112,7 +109,7 @@ nextright: 	LEA	dequant(pc),a6         ; pointer to lookup table
 ;==============================================================================
 ; Decodes QOA slice of mono/stereo stream.
 ; Registers usage:
-;   d0,d1 - slice
+;   d0   - slice
 ;   d2,d3 - LMS weights (updated)
 ;   d4 - residual sample, quantized, dequantized, scaled
 ;   d5 - predicted sample
@@ -120,7 +117,7 @@ nextright: 	LEA	dequant(pc),a6         ; pointer to lookup table
 ;   d7 - not used (slice loop counter)
 ;   a0 - not used (input data pointer)
 ;   a1 - output data pointer (advanced)
-;   a2,a3,a4,a5 - LMS history (updated)
+;   a2,a3,a4,d1 - LMS history (updated)
 ;   a6 - pointer to 'dequant' lookup table (modified)
 ;==============================================================================
 
@@ -136,15 +133,16 @@ slice:		ROL.L	#8,d0
 
 		; now the first bit of r[9] is in d0:0, pull two bits from d1
 
-		ADD.L   d1,d1
+		MOVE.L  (a0),d4
+		ADD.L   d4,d4
 		ADDX.B  d0,d0
-		ADD.L   d1,d1
+		ADD.L   d4,d4
 		ADDX.B  d0,d0
 		ADD.B   d0,d0
 		MOVE.W  #0,d7
 		BSR.S	DecSamp
-		MOVE.L  d1,d0
-		ROL.L   #4,d0
+		MOVE.L  (a0)+,d0
+		ROL.L   #6,d0
 
 		; extract 10 residuals from d0
 
@@ -161,11 +159,11 @@ DecLoop:	ROL.L   #3,d0
 
 DecSamp:	MOVEQ   #$E,d4
 		AND.W   d0,d4                ; extract encoded sample in d4
-		MOVE.W  (a6,d4.w),d4           ; decode with lookup table
+		MOVE.W  (a6,d4.w),d4         ; decode with lookup table
 
 		; calculate predicted sample, store in d5
 
-		MOVE.W	a5,d5                  ; history[-1]
+		MOVE.W	d1,d5                  ; history[-1]
 		MULS.W	d3,d5                  ; *= weights[-1]
 		SWAP	d3
 		MOVE.W	a4,d6                  ; history[-2]
@@ -182,17 +180,17 @@ DecSamp:	MOVEQ   #$E,d4
 		ASR.L	#7,d5                  ; predicted sample in d5
 
 		; add predicted sample to reconstructed residual with clamp to
-		; 16-bit signed range, store in d5, code by meynaf from EAB
+		; 16-bit signed range, store in d5
 
-		EXT.L	d4
-		ADD.L	d4,d5
-		CMPI.L	#32767,d5
-		BLE.S	noupper
-		MOVE.W	#32767,d5
-		BRA.S	clamped
-noupper:	CMPI.L	#-32768,d5
-		BGE.S	clamped
-		MOVE.W	#-32768,d5
+		EXT.L   d4
+		ADD.L   d4,d5
+		MOVEA.W d5,a5              ; with sign-extend to 32 bits
+		CMPA.L  d5,a5
+		BEQ.S   clamped
+		TST.L   d5
+		SPL     d5                 ; ??FF positive, ??00 negative
+		EXT.W   d5                 ; FFFF positive, 0000 negative
+		EORI.W  #$8000,d5          ; 7FFF positive, 8000 negative
 
 		; update LMS weights, reconstructed sample in d5, decoded
 		; residual in d4
@@ -203,7 +201,7 @@ clamped:	ASR.W	#4,d4                  ; scale residual signal down
 		BMI.S	h4neg
 		ADD.W	d4,d2
 		BRA.S	h3
-h4neg:  	SUB.W	d4,d2
+h4neg:		SUB.W	d4,d2
 h3:		SWAP	d2
 		MOVE.W	a3,d6
 		BMI.S	h3neg
@@ -216,7 +214,7 @@ h2:		MOVE.W	a4,d6
 		BRA.S	h1
 h2neg:		SUB.W	d4,d3
 h1:		SWAP	d3
-		MOVE.W	a5,d6
+		MOVE.W	d1,d6
 		BMI.S	h1neg
 		ADD.W	d4,d3
 		BRA.S	update
@@ -224,10 +222,10 @@ h1neg:  	SUB.W	d4,d3
 
 		; update history vector
 
-update: 	MOVEA.W	a3,a2
-		MOVEA.W	a4,a3
-		MOVEA.W	a5,a4
-		MOVEA.W	d5,a5
+update: 	MOVEA.W a3,a2
+		MOVEA.W a4,a3
+		MOVEA.W d1,a4
+		MOVE.W  d5,d1
 
 		; store output sample
 
