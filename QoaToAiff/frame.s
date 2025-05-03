@@ -159,7 +159,7 @@ DecLoop:	ROL.L   #3,d0
 
 DecSamp:	MOVEQ   #$E,d4
 		AND.W   d0,d4                ; extract encoded sample in d4
-		MOVE.W  (a6,d4.w),d4           ; decode with lookup table
+		MOVE.W  (a6,d4.w),d4         ; decode with lookup table
 
 		; calculate predicted sample, store in d5
 
@@ -180,17 +180,17 @@ DecSamp:	MOVEQ   #$E,d4
 		ASR.L	#7,d5                  ; predicted sample in d5
 
 		; add predicted sample to reconstructed residual with clamp to
-		; 16-bit signed range, store in d5, code by meynaf from EAB
+		; 16-bit signed range, store in d5
 
-		EXT.L	d4
-		ADD.L	d4,d5
-		CMPI.L	#32767,d5
-		BLE.S	noupper
-		MOVE.W	#32767,d5
-		BRA.S	clamped
-noupper:	CMPI.L	#-32768,d5
-		BGE.S	clamped
-		MOVE.W	#-32768,d5
+		EXT.L   d4
+		ADD.L   d4,d5
+		MOVEA.W d5,a5              ; with sign-extend to 32 bits
+		CMPA.L  d5,a5
+		BEQ.S   clamped
+		TST.L   d5
+		SPL     d5                 ; ??FF positive, ??00 negative
+		EXT.W   d5                 ; FFFF positive, 0000 negative
+		EORI.W  #$8000,d5          ; 7FFF positive, 8000 negative
 
 		; update LMS weights, reconstructed sample in d5, decoded
 		; residual in d4
@@ -201,7 +201,7 @@ clamped:	ASR.W	#4,d4                  ; scale residual signal down
 		BMI.S	h4neg
 		ADD.W	d4,d2
 		BRA.S	h3
-h4neg:  	SUB.W	d4,d2
+h4neg:		SUB.W	d4,d2
 h3:		SWAP	d2
 		MOVE.W	a3,d6
 		BMI.S	h3neg
