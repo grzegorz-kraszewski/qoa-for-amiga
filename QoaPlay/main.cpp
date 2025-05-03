@@ -10,9 +10,10 @@
 #include "errors.h"
 #include "qoainput.h"
 #include "locale.h"
+#include "player-paula-mono8.h"
 
 
-Library *LocaleBase, *TimerBase, *MathIeeeSingBasBase, *UtilityBase;
+Library *LocaleBase, *UtilityBase;
 Catalog *Cat;
 
 
@@ -42,7 +43,9 @@ char *ErrorMessages[E_ENTRY_COUNT] = {
 	"Can't open utility.library v39+",
 	"Can't open mathieeesingbas.library",
 	"Commandline arguments",
-	"Out of memory"
+	"Out of memory",
+	"Can't open audio.device",
+	"No free audio channels"
 };
 
 
@@ -184,40 +187,16 @@ ULONG App::ConvertFrame()
 
 BOOL App::Play()
 {
-	BOOL run = TRUE;
-	LONG fsamples;
-	ULONG decoded = 0;
+	BOOL result = FALSE;
+	PlayerPaulaMono8 player(inFile->sampleRate);
 
-	do
+	if (player.ready)
 	{
-		fsamples = ConvertFrame();
-
-		Printf(LS(MSG_DECODING_PROGRESS_INDICATOR, "%9ld/%9ld samples played.\r"),
-			decoded, inFile->samples);
-
-		if (fsamples == 0)
-		{
-			run = FALSE;
-		}
-		else if ((fsamples < 5120) && (decoded < inFile->samples))
-		{
-			Problem(E_QOA_UNEXP_PARTIAL_FRAME);
-			run = FALSE;
-		}
-
-		// keyboard break check
-
-		if (CheckSignal(SIGBREAKF_CTRL_C))
-		{
-			PutStr(LS(MSG_CONVERSION_ABORTED, "\nPlayback stopped."));
-			run = FALSE;
-		}
-
+		Printf("Player started successfully.\n");
+		result = TRUE;
 	}
-	while (run && (decoded < inFile->samples));
 
-	PutStr("\n");
-	return run;
+	return result;
 }
 
 
@@ -239,27 +218,21 @@ LONG Main(WBStartup *wbmsg)
 
 	CallArgs args;
 
-	if (MathIeeeSingBasBase = OpenLibrary("mathieeesingbas.library", 0))
+	if (UtilityBase = OpenLibrary("utility.library", 39))
 	{
-		if (UtilityBase = OpenLibrary("utility.library", 39))
+		if (args.ready)
 		{
-			if (args.ready)
+			App app(args);
+
+			if (app.ready)
 			{
-				App app(args);
-
-				if (app.ready)
-				{
-					if (app.Play()) result = RETURN_OK;
-				}
+				if (app.Play()) result = RETURN_OK;
 			}
-
-			CloseLibrary(UtilityBase);
 		}
-		else Problem(E_APP_NO_UTILITY_LIBRARY);
 
-		CloseLibrary(MathIeeeSingBasBase);
+		CloseLibrary(UtilityBase);
 	}
-	else Problem(E_APP_NO_MATHIEEE_LIBRARY);
+	else Problem(E_APP_NO_UTILITY_LIBRARY);
 
 	if (LocaleBase)
 	{

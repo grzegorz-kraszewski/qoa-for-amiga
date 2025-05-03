@@ -5,7 +5,10 @@
 
 #define MAKE_ID(a, b, c, d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
 
+#define DEBUG
+
 #ifdef DEBUG
+#include <proto/dos.h>
 #define D(args...) Printf(args)
 #else
 #define D(args...)
@@ -17,6 +20,6 @@ ULONG _a = (a); \
 asm("DIVU.W %2,%0": "=d" (_r): "0" (_a), "dmi" (_b): "cc"); \
 _r;})
 
-extern Library *SysBase, *DOSBase, *LocaleBase, *UtilityBase;
+extern Library *SysBase, *DOSBase, *GfxBase, *LocaleBase, *UtilityBase;
 
 BOOL Problem(LONG error);

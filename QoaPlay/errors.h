@@ -22,11 +22,13 @@
 #define E_APP_NO_MATHIEEE_LIBRARY     16    /* can't open mathieeesingbas.library */
 #define E_APP_COMMANDLINE_ARGS        17    /* wrong commandline arguments */
 #define E_APP_OUT_OF_MEMORY           18    /* some allocation failed */
+#define E_APP_AUDIO_DEVICE_FAILED     19    /* can't open audio.device */
+#define E_APP_AUDIO_NO_CHANNELS       20    /* can't allocate audio channels */
 
 // end of codes directly related to ErrorMessages[]
 
-#define E_ENTRY_COUNT                 19
+#define E_ENTRY_COUNT                 21
 
 // codes below have no entry in ErrorMessages[]
 
-#define E_APP_FILE                    19    /* DOS problem with a file */
+#define E_APP_FILE                    21    /* DOS problem with a file */
