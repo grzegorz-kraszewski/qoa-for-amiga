@@ -180,10 +180,9 @@ DecSamp:	MOVEQ   #$E,d4
 		EXT.L   d4
 		ADD.L   d4,d5
 		MOVEA.W d5,a5              ; with sign-extend to 32 bits
-		CMPA.L  d5,a5
+		CMP.L   a5,d5
 		BEQ.S   clamped
-		TST.L   d5
-		SPL     d5                 ; ??FF positive, ??00 negative
+		SGT     d5                 ; ??FF positive, ??00 negative
 		EXT.W   d5                 ; FFFF positive, 0000 negative
 		EORI.W  #$8000,d5          ; 7FFF positive, 8000 negative
 
