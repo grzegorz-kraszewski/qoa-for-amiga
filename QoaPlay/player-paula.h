@@ -18,7 +18,13 @@ class PlayerPaula
 	IOAudio *reqs[4];
 	void AudioProblem(LONG error);
 	void InitReq0();
-	BOOL ready;
 	PlayerPaula(LONG frequency);
 	~PlayerPaula();
+	BOOL devopen;
+
+	public:
+
+	BOOL ready;
+	virtual BYTE* GetBuffer(void) = 0;
+	virtual BOOL BufferFilled(LONG samples) = 0;
 };

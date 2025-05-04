@@ -17,6 +17,7 @@ PlayerPaula::PlayerPaula(LONG frequency)
 
 	ready = TRUE;
 	port = NULL;
+	devopen = FALSE;
 	for (WORD i = 0; i < 4; i++) reqs[i] = NULL;
 	if (((ExecBase*)SysBase)->VBlankFrequency == 60) masterclock =  3579545;   // NTSC
 	period = divu16(masterclock, frequency);
@@ -44,6 +45,7 @@ PlayerPaula::PlayerPaula(LONG frequency)
 			
 			if (!err)
 			{
+				devopen = TRUE;
 				left = (UBYTE)reqs[0]->ioa_Request.io_Unit & PAULA_LEFT_CHANNELS;
 				right = (UBYTE)reqs[0]->ioa_Request.io_Unit & PAULA_RIGHT_CHANNELS;
 				D("PlayerPaula[$%08lx]: using $%ld as left channel, $%ld as right channel.\n",
@@ -62,7 +64,7 @@ PlayerPaula::PlayerPaula(LONG frequency)
 
 PlayerPaula::~PlayerPaula()
 {
-	if (ready)
+	if (devopen)
 	{
 		CloseDevice((IORequest*)reqs[0]);
 		D("PlayerPaula[$%08lx]: device closed.\n", this);

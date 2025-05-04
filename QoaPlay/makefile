@@ -1,9 +1,10 @@
 CC = g++
 LD = g++
+CCC = gcc
 CFLAGS = -fbaserel -O2 -fomit-frame-pointer -mregparm -fno-exceptions -fno-rtti -D__NOLIBBASE__
 LDFLAGS = -nostdlib -fbaserel -nostartfiles -fno-exceptions -fno-rtti
 LIBS = -lminteger -lmfloat
-OBJS = start.o main.o sysfile.o qoainput.o frame.o player-paula.o player-paula-mono8.o
+OBJS = start.o main.o sysfile.o qoainput.o frame.o player-paula.o player-paula-mono8.o purevirtual.o
 EXE = QoaPlay
 
 all: $(OBJS)
@@ -28,12 +29,18 @@ frame.o: frame.s
 	@echo "Compiling $@..."
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
+%.o: %.c
+	@echo "Compiling $@..."
+	@$(CCC) $(CFLAGS) -c -o $@ $<
+
+
 # dependencies
 
 frame.o: frame.s
 main.o: main.cpp main.h errors.h qoainput.h sysfile.h locale.h player-paula.h
 player-paula.o: player-paula.cpp player-paula.h main.h errors.h
 player-paula-mono8.o: player-paula-mono8.cpp player-paula-mono8.h player-paula.h
+purevirtual.o: purevirtual.c
 qoainput.o: qoainput.cpp main.h errors.h locale.h qoainput.h sysfile.h
 start.o: start.cpp main.h
 sysfile.o: sysfile.cpp sysfile.h main.h errors.h

@@ -7,8 +7,8 @@ class PlayerPaulaMono8 : public PlayerPaula
 
 	public:
 
-	BOOL ready;
 	PlayerPaulaMono8(LONG frequency);
 	~PlayerPaulaMono8();
-	//BYTE* GetBuffer();
+	BYTE* GetBuffer();
+	BOOL BufferFilled(LONG samples);
 };

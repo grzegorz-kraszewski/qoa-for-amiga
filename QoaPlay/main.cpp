@@ -19,8 +19,8 @@ Catalog *Cat;
 
 extern "C"
 {
-	void DecodeMonoFrame(ULONG *in, WORD *out, WORD slices);
-	void DecodeStereoFrame(ULONG *in, WORD *out, WORD slices);
+	void DecodeMonoFrame(ULONG *in, BYTE *out, WORD slices);
+	void DecodeStereoFrame(ULONG *in, BYTE *out, WORD slices);
 }
 
                                                                                                     
@@ -124,8 +124,8 @@ class CallArgs
 class App
 {
 	QoaInput *inFile;
-	void (*decoder)(ULONG*, WORD*, WORD);
-	ULONG ConvertFrame();
+	void (*decoder)(ULONG*, BYTE*, WORD);
+	ULONG DecodeFrame(BYTE *buffer);
 	public:
 
 	BOOL ready;
@@ -156,7 +156,7 @@ App::~App()
 }
 
 
-ULONG App::ConvertFrame()
+ULONG App::DecodeFrame(BYTE *buffer)
 {
 	ULONG *frame;
 	UWORD channels;
@@ -179,24 +179,45 @@ ULONG App::ConvertFrame()
 	slicesPerChannel = divu16(fsamples + 19, 20);
 	expectedFrameSize = inFile->QoaFrameSize(fsamples, channels);
 	if (expectedFrameSize != fbytes) { Problem(E_QOA_WRONG_FRAME_SIZE); return 0; }
-	//decoder(&frame[2], (WORD*)outPtr, slicesPerChannel);
-	//outPtr += fsamples << inFile->channels;
+	decoder(&frame[2], buffer, slicesPerChannel);
 	return fsamples;
 }
 
 
 BOOL App::Play()
 {
-	BOOL result = FALSE;
-	PlayerPaulaMono8 player(inFile->sampleRate);
+	BOOL go = FALSE;
+	PlayerPaula *player;
+	LONG played = 0;
+	BYTE *buffer;
 
-	if (player.ready)
+	if (inFile->channels == 1)
 	{
-		Printf("Player started successfully.\n");
-		result = TRUE;
+		decoder = DecodeMonoFrame;
+		player = new PlayerPaulaMono8(inFile->sampleRate);
+	}
+	else
+	{
+		decoder = DecodeStereoFrame;
+		player = NULL; // new PlayerPaulaStereo8(inFile->sampleRate);
 	}
 
-	return result;
+	if (player->ready)
+	{
+		go = TRUE;
+
+		while (go && (played < inFile->samples))
+		{
+			WORD fsamples;
+
+			fsamples = DecodeFrame(player->GetBuffer());
+
+			if (fsamples > 0) go = player->BufferFilled(fsamples);
+			else go = FALSE;
+		}
+	}
+
+	return go;
 }
 
 
