@@ -186,28 +186,31 @@ DecSamp:	MOVEQ   #$E,d4
 
 clamped:	ASR.W   #4,d4                  ; scale residual signal down
 
+		SUB.W   d4,d2
 		MOVE.W  a2,d6
-		BMI.S   h4neg
+		BMI.S   hist3
 		ADD.W   d4,d2
-		BRA.S   h3
-h4neg:		SUB.W   d4,d2
-h3:		SWAP    d2
+		ADD.W   d4,d2
+
+hist3:		SWAP    d2
+		SUB.W   d4,d2
 		MOVE.W  a3,d6
-		BMI.S   h3neg
+		BMI.S   hist2
 		ADD.W   d4,d2
-		BRA.S   h2
-h3neg:		SUB.W   d4,d2
-h2:		MOVE.W  a4,d6
-		BMI.S   h2neg
+		ADD.W   d4,d2
+
+hist2:		SUB.W   d4,d3
+		MOVE.W  a4,d6
+		BMI.S   hist1
 		ADD.W   d4,d3
-		BRA.S   h1
-h2neg:		SUB.W   d4,d3
-h1:		SWAP    d3
+		ADD.W   d4,d3
+
+hist1:		SWAP    d3
+		SUB.W   d4,d3
 		MOVE.W  d1,d6
-		BMI.S   h1neg
+		BMI.S   update
 		ADD.W   d4,d3
-		BRA.S   update
-h1neg:  	SUB.W   d4,d3
+		ADD.W   d4,d3
 
 		; update history vector
 
