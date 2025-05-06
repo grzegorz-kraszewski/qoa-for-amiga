@@ -18,39 +18,66 @@ PlayerPaula::PlayerPaula(LONG frequency)
 	ready = TRUE;
 	port = NULL;
 	devopen = FALSE;
-	for (WORD i = 0; i < 4; i++) reqs[i] = NULL;
+
+	// initialize AudioBlocks
+	
+	for (WORD i = 1; i >= 0; i--)
+	{
+		blocks[i].reqL = NULL;
+		blocks[i].reqR = NULL;
+		blocks[i].bufL = NULL;
+		blocks[i].bufR = NULL;
+		blocks[i].statusL = ABLOCK_UNUSED;
+		blocks[i].statusR = ABLOCK_UNUSED;
+	}
+
 	if (((ExecBase*)SysBase)->VBlankFrequency == 60) masterclock =  3579545;   // NTSC
 	period = divu16(masterclock, frequency);
 	D("PlayerPaula[%08lx]: masterclock = %lu, using period %lu.\n", this, masterclock, period);
 
 	if (port = CreateMsgPort())
 	{
-		for (WORD i = 3; i >= 0; i--)
+		for (WORD i = 1; i >= 0; i--)
 		{
-			if (!(reqs[i] = (IOAudio*)CreateIORequest(port, sizeof(IOAudio))))
+			blocks[i].reqL = (IOAudio*)CreateIORequest(port, sizeof(IOAudio));
+			blocks[i].reqR = (IOAudio*)CreateIORequest(port, sizeof(IOAudio));
+
+			if (blocks[i].reqL && blocks[i].reqR) continue;
+			else
 			{
 				ready = FALSE;
 				break;
 			}
 
-			D("PlayerPaula[$%08lx]: reqs[%ld] created at $%08lx.\n", this, i, reqs[i]);
+			D("PlayerPaula[$%08lx]: block[%ld], L iorequest created at $%08lx.\n",
+				this, i, blocks[i].reqL);
+			D("PlayerPaula[$%08lx]: block[%ld], R iorequest created at $%08lx.\n",
+				this, i, blocks[i].reqR);
 		}
 
 		if (ready)
 		{
-			InitReq0();
-			err = OpenDevice("audio.device", 0, (IORequest*)reqs[0], 0);
+			IOAudio *req0 = blocks[0].reqL;
+
+			InitReq0(req0);
+			err = OpenDevice("audio.device", 0, (IORequest*)req0, 0);
+
 			D("PlayerPaula[$%08lx]: OpenDevice result %ld, channel mask $%lx.\n", this, err,
-				reqs[0]->ioa_Request.io_Unit);
-			
+				req0->ioa_Request.io_Unit);
+
 			if (!err)
 			{
 				devopen = TRUE;
-				left = (UBYTE)reqs[0]->ioa_Request.io_Unit & PAULA_LEFT_CHANNELS;
-				right = (UBYTE)reqs[0]->ioa_Request.io_Unit & PAULA_RIGHT_CHANNELS;
+				left = (UBYTE)req0->ioa_Request.io_Unit & PAULA_LEFT_CHANNELS;
+				right = (UBYTE)req0->ioa_Request.io_Unit & PAULA_RIGHT_CHANNELS;
+
 				D("PlayerPaula[$%08lx]: using $%ld as left channel, $%ld as right channel.\n",
 					this, left, right);
-				InitReqClones();
+
+				InitReqClone(req0, blocks[0].reqL, left);
+				InitReqClone(req0, blocks[0].reqR, right);
+				InitReqClone(req0, blocks[1].reqL, left);
+				InitReqClone(req0, blocks[1].reqR, right);
 			}
 			else
 			{
@@ -66,16 +93,22 @@ PlayerPaula::~PlayerPaula()
 {
 	if (devopen)
 	{
-		CloseDevice((IORequest*)reqs[0]);
+		CloseDevice((IORequest*)blocks[0].reqL);
 		D("PlayerPaula[$%08lx]: device closed.\n", this);
 	}
 
-	for (WORD i = 3; i >= 0; i--)
+	for (WORD i = 1; i >= 0; i--)
 	{
-		if (reqs[i])
+		if (blocks[i].reqL)
 		{
-			DeleteIORequest((IORequest*)reqs[i]);
-			D("PlayerPaula[$%08lx]: request $%08lx deleted.\n", this, reqs[i]);
+			DeleteIORequest((IORequest*)blocks[i].reqL);
+			D("PlayerPaula[$%08lx]: request $%08lx deleted.\n", this, blocks[i].reqL);
+		}
+
+		if (blocks[i].reqR)
+		{
+			DeleteIORequest((IORequest*)blocks[i].reqR);
+			D("PlayerPaula[$%08lx]: request $%08lx deleted.\n", this, blocks[i].reqR);
 		}
 	}
 
@@ -94,34 +127,24 @@ static UBYTE ChannelMatrix[4] = { 3, 5, 10, 12 };
 
 // Initializes IORequest for device opening (channel allocation is done at opening)
 
-void PlayerPaula::InitReq0()
+void PlayerPaula::InitReq0(IOAudio *req)
 {
-	reqs[0]->ioa_AllocKey = 0;
-	reqs[0]->ioa_Data = ChannelMatrix;
-	reqs[0]->ioa_Length = sizeof(ChannelMatrix);
-	reqs[0]->ioa_Request.io_Message.mn_Node.ln_Pri = 120;
+	req->ioa_AllocKey = 0;
+	req->ioa_Data = ChannelMatrix;
+	req->ioa_Length = sizeof(ChannelMatrix);
+	req->ioa_Request.io_Message.mn_Node.ln_Pri = 120;
 }
 
-// IoRequests 0 and 2 are for stereo L
-// IoRequests 1 and 3 are for stereo R
 
-void PlayerPaula::InitReqClones()
+void PlayerPaula::InitReqClone(IOAudio *src, IOAudio *clone, UBYTE side)
 {
-	reqs[1]->ioa_AllocKey = reqs[0]->ioa_AllocKey;
-	reqs[2]->ioa_AllocKey = reqs[0]->ioa_AllocKey;
-	reqs[3]->ioa_AllocKey = reqs[0]->ioa_AllocKey;
-	reqs[0]->ioa_Request.io_Unit = (Unit*)left;
-	reqs[1]->ioa_Request.io_Unit = (Unit*)right;
-	reqs[2]->ioa_Request.io_Unit = (Unit*)left;
-	reqs[3]->ioa_Request.io_Unit = (Unit*)right;
-
-	for (WORD i = 3; i >= 0; i--)
-	{
-		reqs[i]->ioa_Cycles = 1;
-		reqs[i]->ioa_Period = period;
-		reqs[i]->ioa_Volume = 64;
-	}
+	clone->ioa_AllocKey = src->ioa_AllocKey;
+	clone->ioa_Request.io_Unit = (Unit*)side;
+	clone->ioa_Cycles = 1;
+	clone->ioa_Period = period;
+	clone->ioa_Volume = 64;
 }
+
 
 void PlayerPaula::AudioProblem(LONG err)
 {
