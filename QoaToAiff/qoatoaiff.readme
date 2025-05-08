@@ -2,7 +2,7 @@ Short:        Decodes Quite OK Audio to AIFF
 Uploader:     grzegorz.kraszewski@gmail.com (Grzegorz Kraszewski)
 Author:       grzegorz.kraszewski@gmail.com (Grzegorz Kraszewski)
 Type:         mus/misc
-Version:      1.1
+Version:      1.2
 Architecture: m68k-amigaos >= 3.0
 
 Quick facts about Quite OK Audio format (qoaformat.org):
@@ -22,6 +22,11 @@ QoaToAiff is an open source project, hosted on GitHub:
 https://github.com/grzegorz-kraszewski/qoa-for-amiga/
 
 HISTORY
+
+1.2 (08.05.2025)
+- Decoder has been made shorter by 28 bytes and faster by 13%
+  (on 68020). Decoding of stereo 44.1 kHz stream is x1.19 to realtime
+  on 68020 @ 28 MHz (ACA1221).
 
 1.1 (02.05.2025)
 
