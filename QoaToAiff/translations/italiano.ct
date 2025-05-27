@@ -1,0 +1,125 @@
+## version $VER: QoaToAiff.catalog 1.2 (27.05.2025)
+## codeset 0
+## language italiano
+## chunk AUTH Translated by Samir Hawamdeh
+;
+; ATO Italia
+; Compiled with FlexCat 2.18 PPC (AmigaOS4)
+; flexcat QoaToAiff.cd QoaToAiff.ct catalog=QoaToAiff.catalog
+;
+; Italian translation of QoaToAiff
+;
+; Traduzione italiana di QoaToAiff
+;
+MSG_ERR_QOA_FILE_TOO_SHORT
+File QOA troppo piccolo, 40 bytes è la dimensione minima
+; QOA file too short, 40 bytes the minimum size
+;
+MSG_ERR_QOA_FILE_TOO_BIG
+File QOA troppo grande, il file AIFF sarà più grande di 2 GB
+; QOA file too big, resulting AIFF will be larger than 2 GB
+;
+MSG_ERR_NOT_QOA_FILE
+Non è un file QOA
+; Not QOA file
+;
+MSG_ERR_ZERO_SAMPLES_SPECIFIED
+Zero campioni specificati nell'intestazione QOA
+; Zero samples specified in the QOA header
+;
+MSG_ERR_ZERO_AUDIO_CHANNELS_SPECIFIED
+Zero canali audio specificati nel primo frame
+; Zero audio channels specified in the first frame
+;
+MSG_ERR_MULTICHANNEL_NOT_SUPPORTED
+QoaToAiff non supporta i file multicanale
+; QoaToAiff does not support multichannel files
+;
+MSG_ERR_ZERO_SAMPLING_RATE
+Frequenza campionamento a 0 Hz specificata nel primo frame
+; 0 Hz sampling rate specified in the first frame
+;
+MSG_ERR_QOA_FILE_SHORTER_THAN_EXPECTED
+File QOA troppo piccolo per il numero specifico di campioni
+; QOA file is too short for specified number of samples
+;
+MSG_ERR_QOA_FILE_LONGER_THAN_EXPECTED
+File QOA troppo grande, i dati extra verranno ignorati
+; QOA file is too long, extra data will be ignored
+;
+MSG_ERR_VARIABLE_CHANNELS_NOT_SUPPORTED
+Flusso di canali variabili non supportato
+; Variable channels stream is not supported
+;
+MSG_ERR_VARIABLE_SAMPLERATE_NOT_SUPPORTED
+Frequenza di campionamento variabile non supportata
+; Variable sampling rate is not supported
+;
+MSG_ERR_ZERO_SAMPLES_FRAME
+Frame QOA con zero campioni specificati
+; QOA frame with zero samples specified
+;
+MSG_ERR_OVERLONG_FRAME
+Frame QOA con più di 5120 campioni specificati
+; QOA frame with more than 5120 samples specified
+;
+MSG_ERR_FRAME_SIZE_MISMATCH
+Dimensione del frame specificata diversa da quella calcolata
+; Specified frame size is different than calculated one
+;
+MSG_ERR_UNEXPECTED_PARTIAL_FRAME
+Inatteso frame parziale QOA non al termine del flusso
+; Unexpected partial QOA frame not at the end of stream
+;
+MSG_ERR_CANT_OPEN_UTILITY_LIBRARY
+Impossibile aprire utility.library v39+
+; Can't open utility.library v39+
+;
+MSG_ERR_CANT_OPEN_MATHIEEE_LIBRARY
+Impossibile aprire mathieeesingbas.library
+; Can't open mathieeesingbas.library
+;
+MSG_COMMANDLINE_ARGUMENTS
+Argomenti da linea di comando
+; Commandline arguments
+;
+MSG_OUT_OF_MEMORY
+Memoria insufficiente
+; Out of memory
+;
+MSG_UNEXPECTED_END_OF_FILE
+fine inattesa del file
+; unexpected end of file
+;
+MSG_DECODING_PROGRESS_INDICATOR
+%s / %s campioni convertiti.\r
+; %s / %s samples converted.\r
+; <samples done>, <samples total>
+;
+MSG_CONVERSION_ABORTED
+\nConversione interrotta.
+; \nConversion aborted.
+;
+MSG_TIMING_REPORT
+tempo I/O del disco: %s secondi.\ntempo di decodifica: %s secondi.\n
+; disk I/O time: %s seconds.\ndecoding time: %s seconds.\n
+; <disk time>, <decoding time>
+;
+MSG_DECODING_SPEED_REPORT
+velocità decodifica in tempo reale: \xD7%s.\n
+; decoding speed to realtime: \xD7%s.\n
+; <integer part>, <hundredths>
+;
+MSG_QOA_STREAM_INFO
+flusso QOA: %s %s campioni a %s Hz (%s secondi).\n
+; QOA stream: %s %s samples at %s Hz (%s seconds).\n
+; <samples>, <mono/stereo>, <sampling rate>, <duration>
+;
+MSG_QOA_STREAM_MONO
+mono
+; mono
+;
+MSG_QOA_STREAM_STEREO
+stereo
+; stereo
+;
